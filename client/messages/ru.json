@@ -1,0 +1,17 @@
+{
+  "Authorization": {
+    "signUp": "Регистрация",
+    "SignIn": "Войти"
+  },
+  "HomePage": {
+    "home": "Главная",
+    "create": "Создать объявление"
+  },
+  "Navigation": {
+    "home": "Главная",
+    "create": "Создать",
+    "messages": "Сообщения",
+    "notifications": "Уведомления",
+    "profile": "Профиль"
+  }
+}
