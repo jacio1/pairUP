@@ -44,7 +44,7 @@ export default function MobileBottom() {
   const t = useTranslations("Navigation");
   const pathname = usePathname();
   return (
-    <nav className="md:hidden bg-background fixed bottom-0 left-0 right-0 z-50 w-full border-t border-muted-foreground/35">
+    <nav className="md:hidden shrink-0 bg-background w-full border-t border-muted-foreground/35 pb-[env(safe-area-inset-bottom)]">
       <ul className="grid grid-cols-5">
         {navItems.map((item) => {
           const Icon = item.icon;
