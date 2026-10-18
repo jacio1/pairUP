@@ -47,7 +47,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           disableTransitionOnChange
         >
           <NextIntlClientProvider>
-            <main>
+            <main className="p-2">
               {children}
             </main>
             <MobileBottom/>
