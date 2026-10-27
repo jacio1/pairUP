@@ -50,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           disableTransitionOnChange
         >
           <NextIntlClientProvider>
-            <main className="flex-1 overflow-y-auto p-2">{children}</main>
+            <main className="flex-1 overflow-y-auto p-2 container mx-auto">{children}</main>
             <MobileBottom />
           </NextIntlClientProvider>
         </ThemeProvider>

@@ -2,7 +2,7 @@ import AdCard from "@/components/AdCard";
 
 export default function Home() {
   return (
-    <div>
+    <div className="">
       <h1>
         главная
       </h1>
