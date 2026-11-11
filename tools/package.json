@@ -1,0 +1,19 @@
+{
+  "name": "pairup-demo-tools",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "qr": "node qr.mjs",
+    "test:ui": "node ui-test.mjs",
+    "test:product": "node product-ui-test.mjs",
+    "record": "node record.mjs"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "playwright": "^1.56.0",
+    "prettier": "^3.10.0"
+  }
+}

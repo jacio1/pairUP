@@ -1,23 +1,16 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
 
-const nextConfig: NextConfig = {
-  /* config options here */
-  experimental: {
-    agentFeedback: true,
-  },
-  cacheComponents: true,
-  partialPrefetching: true,
-  turbopack: {
-    rules: {
-      "*.css": {
-        loaders: ["@tailwindcss/turbopack"],
-        as: "*.css",
+const config: NextConfig = {
+  devIndicators: false,
+  output: "standalone",
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${process.env.API_INTERNAL_URL || "http://127.0.0.1:4000"}/api/:path*`,
       },
-    },
+    ];
   },
 };
-
-const withNextIntl = createNextIntlPlugin();
-
-export default withNextIntl(nextConfig);
+export default createNextIntlPlugin()(config);

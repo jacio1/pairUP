@@ -1,0 +1,11 @@
+# Local production check only: self-signed localhost HTTPS, no public DNS.
+services:
+  server:
+    environment:
+      PUBLIC_ORIGIN: https://localhost:18443
+  proxy:
+    environment:
+      DOMAIN: localhost
+    ports: !override
+      - "127.0.0.1:18080:80"
+      - "127.0.0.1:18443:443"
