@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: pairup
+      POSTGRES_DB: pairup
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pairup -d pairup"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  server:
+    image: pairup-server:latest
+    build: ./server
+    environment:
+      DATABASE_URL: postgresql://pairup:${POSTGRES_PASSWORD}@db:5432/pairup?schema=public
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:?Set PUBLIC_ORIGIN}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      PRESENTER_PASSWORD: ${PRESENTER_PASSWORD:?Set PRESENTER_PASSWORD}
+      WORKER_SECRET: ${WORKER_SECRET:?Set WORKER_SECRET}
+      YANDEX_API_KEY: ${YANDEX_API_KEY:-}
+      YANDEX_MODEL: ${YANDEX_MODEL:-}
+      LOCAL_TIMEOUT_MS: ${LOCAL_TIMEOUT_MS:-45000}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+  client:
+    image: pairup-client:latest
+    build: ./client
+    environment:
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+    depends_on:
+      - server
+    restart: unless-stopped
+  proxy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - client
+      - server
+    restart: unless-stopped
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

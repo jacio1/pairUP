@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       String    @id
+  role     String
+  sessions Session[]
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Listing {
+  id     String @id
+  roomId String @unique
+  room   Room   @relation(fields: [roomId], references: [id])
+}
+
+model Room {
+  id         String    @id
+  generation Int       @default(0)
+  listing    Listing?
+  messages   Message[]
+  jobs       AiJob[]
+}
+
+model Message {
+  seq             Int      @id @default(autoincrement())
+  id              String   @unique @default(uuid())
+  roomId          String
+  room            Room     @relation(fields: [roomId], references: [id])
+  author          String
+  sessionId       Int?
+  kind            String   @default("human")
+  text            String
+  clientRequestId String   @unique
+  targetMessageId String?
+  createdAt       DateTime @default(now())
+  @@index([roomId, seq])
+}
+
+model AiJob {
+  id              String   @id @default(uuid())
+  roomId          String
+  room            Room     @relation(fields: [roomId], references: [id])
+  clientRequestId String   @unique
+  prompt          String
+  locale          String
+  targetMessageId String?
+  generation      Int
+  status          String   @default("pending")
+  provider        String?
+  error           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  @@index([roomId, createdAt])
+}
