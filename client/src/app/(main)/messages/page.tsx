@@ -1,4 +1,4 @@
-import { Conversations } from "@/components/product-pages";
+import { ProposalPage } from "@/components/listings/proposal-page";
 export default function Page() {
-  return <Conversations />;
+  return <ProposalPage mode="messages" />;
 }

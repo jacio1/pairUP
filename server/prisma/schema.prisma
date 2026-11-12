@@ -21,10 +21,13 @@ model Session {
   expiresAt DateTime
   createdAt DateTime  @default(now())
   listings  Listing[]
+  sentProposals SessionProposal[] @relation("ProposalSender")
+  receivedProposals SessionProposal[] @relation("ProposalOwner")
 }
 
 model Listing {
   id             String   @id
+  publicId       Int      @unique @default(autoincrement())
   roomId         String   @unique
   room           Room     @relation(fields: [roomId], references: [id])
   ownerSessionId Int?
@@ -39,6 +42,7 @@ model Listing {
   location       String   @default("")
   description    String   @default("")
   createdAt      DateTime @default(now())
+  proposals      SessionProposal[]
 
   @@index([ownerSessionId, createdAt])
   @@index([createdAt])
@@ -50,6 +54,21 @@ model Room {
   listing    Listing?
   messages   Message[]
   jobs       AiJob[]
+}
+
+model SessionProposal {
+  id String @id @default(uuid())
+  listingId String
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  senderId Int
+  sender Session @relation("ProposalSender", fields: [senderId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  ownerId Int?
+  owner Session? @relation("ProposalOwner", fields: [ownerId], references: [id], onDelete: SetNull, onUpdate: NoAction)
+  senderName String
+  status String @default("pending")
+  createdAt DateTime @default(now())
+  @@unique([listingId, senderId])
+  @@index([ownerId, createdAt])
 }
 
 model Message {

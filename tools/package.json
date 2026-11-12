@@ -7,7 +7,10 @@
     "qr": "node qr.mjs",
     "test:ui": "node ui-test.mjs",
     "test:product": "node product-ui-test.mjs",
-    "record": "node record.mjs"
+    "record": "node record.mjs",
+    "test:flow": "node session-flow-test.mjs",
+    "test:transport": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test chat-transport.test.mjs",
+    "test:refactor": "node refactor-ui-test.mjs"
   },
   "dependencies": {
     "qrcode": "^1.5.4"

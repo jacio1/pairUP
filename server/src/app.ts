@@ -65,10 +65,27 @@ export class Database
       create: { id: ROOM },
       update: {},
     });
+    await this.room.upsert({
+      where: { id: "listing-english-practice" },
+      create: { id: "listing-english-practice" },
+      update: {},
+    });
     await this.listing.upsert({
       where: { id: "demo-listing" },
-      create: { id: "demo-listing", roomId: ROOM },
-      update: {},
+      create: { id: "demo-listing", roomId: "listing-english-practice" },
+      update: { roomId: "listing-english-practice" },
+    });
+    await this.listing.updateMany({
+      where: { id: "demo-listing" },
+      data: {
+        authorName: "Alex",
+        title: "English",
+        subject: "english",
+        level: "intermediate",
+        goal: "Build confidence speaking English",
+        description: "English",
+        schedule: "",
+      },
     });
     await this.aiJob.updateMany({
       where: { status: { in: ["pending", "running"] } },
@@ -107,6 +124,24 @@ export class Auth {
       name:
         session.user.role === "presenter" ? "Presenter" : `TEST #${session.id}`,
     };
+  }
+  async roomAccess(cookie: string | undefined, roomId: string) {
+    const session = await this.require(cookie);
+    const listing = await this.db.listing.findUnique({ where: { roomId } });
+    if (!listing) return fail("NOT_FOUND", 404);
+    if (listing.id === "demo-listing") return session;
+    const owner =
+      listing.ownerSessionId === session.id ||
+      (listing.id === "demo-listing" && session.user.role === "presenter");
+    const accepted = await this.db.sessionProposal.findFirst({
+      where: {
+        listingId: listing.id,
+        senderId: session.id,
+        status: "accepted",
+      },
+    });
+    if (!owner && !accepted) return fail("FORBIDDEN", 403);
+    return session;
   }
   async login(
     req: Request,
@@ -193,6 +228,20 @@ export class Realtime implements OnGatewayConnection, OnGatewayDisconnect {
       }
       const session = await this.auth.require(socket.handshake.headers.cookie);
       socket.data.session = this.auth.view(session);
+      await socket.join(`user:${session.id}`);
+      const requestedRoom = socket.handshake.auth?.roomId;
+      if (typeof requestedRoom === "string") {
+        try {
+          await this.auth.roomAccess(
+            socket.handshake.headers.cookie,
+            requestedRoom,
+          );
+          socket.data.roomId = requestedRoom;
+          await socket.join(requestedRoom);
+        } catch {
+          socket.emit("room:denied");
+        }
+      }
       socket.data.expiry = setTimeout(
         () => {
           socket.emit("session:expired");
@@ -214,7 +263,6 @@ export class Realtime implements OnGatewayConnection, OnGatewayDisconnect {
           });
         }
       });
-      await socket.join(ROOM);
       socket.emit("room:ready");
     } catch {
       socket.emit("session:expired");
@@ -231,8 +279,13 @@ export class Realtime implements OnGatewayConnection, OnGatewayDisconnect {
         this.pending.delete(id);
       }
   }
-  emit(event: string, data: unknown) {
-    this.server.to(ROOM).emit(event, data);
+  emit(event: string, data: unknown, roomId = ROOM) {
+    this.server
+      .to(roomId)
+      .emit(
+        event,
+        data && typeof data === "object" ? { ...data, roomId } : data,
+      );
   }
   cancelLocal(id: string) {
     const pending = this.pending.get(id);
@@ -275,25 +328,30 @@ export class Chat implements OnModuleInit {
   ) {}
   onModuleInit() {
     this.rt.onMessage = async (socket, payload) => {
-      const session = await this.auth.require(socket.handshake.headers.cookie);
-      return this.send(this.auth.view(session), payload);
+      const roomId = socket.data.roomId;
+      if (!roomId) return fail("FORBIDDEN", 403);
+      const session = await this.auth.roomAccess(
+        socket.handshake.headers.cookie,
+        roomId,
+      );
+      return this.send(this.auth.view(session), payload, roomId);
     };
   }
   async lock(tx: Prisma.TransactionClient) {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(735901)`;
   }
-  async snapshot(after = 0) {
+  async snapshot(after = 0, roomId = ROOM) {
     if (!Number.isSafeInteger(after) || after < 0) return fail("INVALID_INPUT");
     return this.db.$transaction(async (tx) => {
       await this.lock(tx);
-      const room = await tx.room.findUniqueOrThrow({ where: { id: ROOM } });
+      const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
       const messages = await tx.message.findMany({
-        where: { roomId: ROOM, seq: { gt: after } },
+        where: { roomId: roomId, seq: { gt: after } },
         orderBy: { seq: "asc" },
         take: 500,
       });
       const job = await tx.aiJob.findFirst({
-        where: { roomId: ROOM, generation: room.generation },
+        where: { roomId: roomId, generation: room.generation },
         orderBy: { createdAt: "desc" },
       });
       return {
@@ -314,14 +372,18 @@ export class Chat implements OnModuleInit {
       };
     });
   }
-  async send(session: { id: number; name: string }, raw: unknown) {
+  async send(
+    session: { id: number; name: string },
+    raw: unknown,
+    roomId = ROOM,
+  ) {
     const data = raw as { clientRequestId?: unknown; text?: unknown };
     if (!data || !validId(data.clientRequestId) || !validText(data.text, 1000))
       return fail("INVALID_INPUT");
-    const requestId = `message:${session.id}:${data.clientRequestId}`;
+    const requestId = `message:${roomId}:${session.id}:${data.clientRequestId}`;
     const result = await this.db.$transaction(async (tx) => {
       await this.lock(tx);
-      const room = await tx.room.findUniqueOrThrow({ where: { id: ROOM } });
+      const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
       const existing = await tx.message.findUnique({
         where: { clientRequestId: requestId },
       });
@@ -335,7 +397,7 @@ export class Chat implements OnModuleInit {
       return {
         message: await tx.message.create({
           data: {
-            roomId: ROOM,
+            roomId: roomId,
             author: session.name,
             sessionId: session.id,
             text: (data.text as string).trim(),
@@ -350,27 +412,33 @@ export class Chat implements OnModuleInit {
       ...result.message,
       generation: result.generation ?? result.message.generation,
     };
-    if (result.created) this.rt.emit("message:created", message);
+    if (result.created) this.rt.emit("message:created", message, roomId);
     return message;
   }
-  async reset() {
+  async reset(roomId = ROOM) {
     const room = await this.db.$transaction(async (tx) => {
       await this.lock(tx);
-      await tx.message.deleteMany({ where: { roomId: ROOM } });
+      await tx.message.deleteMany({ where: { roomId: roomId } });
       await tx.aiJob.updateMany({
-        where: { roomId: ROOM, status: { in: ["pending", "running"] } },
+        where: { roomId: roomId, status: { in: ["pending", "running"] } },
         data: { status: "cancelled" },
       });
       return tx.room.update({
-        where: { id: ROOM },
+        where: { id: roomId },
         data: { generation: { increment: 1 } },
       });
     });
-    for (const [id, controller] of this.activeJobs) {
+    const jobs = await this.db.aiJob.findMany({
+      where: { roomId, status: "cancelled" },
+      select: { id: true },
+    });
+    for (const { id } of jobs) {
+      const controller = this.activeJobs.get(id);
+      if (!controller) continue;
       controller.abort();
       this.rt.cancelLocal(id);
     }
-    this.rt.emit("room:reset", { generation: room.generation });
+    this.rt.emit("room:reset", { generation: room.generation }, roomId);
     return { ok: true };
   }
   async requestAi(
@@ -381,6 +449,7 @@ export class Chat implements OnModuleInit {
       locale?: unknown;
       targetMessageId?: unknown;
     },
+    roomId = ROOM,
   ) {
     if (
       !data ||
@@ -390,16 +459,16 @@ export class Chat implements OnModuleInit {
       (data.targetMessageId !== undefined && !validId(data.targetMessageId))
     )
       return fail("INVALID_INPUT");
-    const requestId = `ai:${session.id}:${data.clientRequestId}`;
+    const requestId = `ai:${roomId}:${session.id}:${data.clientRequestId}`;
     const result = await this.db.$transaction(async (tx) => {
       await this.lock(tx);
       const existing = await tx.aiJob.findUnique({
         where: { clientRequestId: requestId },
       });
       if (existing) return { job: existing, messages: null, message: null };
-      const room = await tx.room.findUniqueOrThrow({ where: { id: ROOM } });
+      const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
       const latest = await tx.aiJob.findFirst({
-        where: { roomId: ROOM, generation: room.generation },
+        where: { roomId: roomId, generation: room.generation },
         orderBy: { createdAt: "desc" },
       });
       if (
@@ -410,14 +479,14 @@ export class Chat implements OnModuleInit {
         return fail("AI_BUSY", 429);
       const target = data.targetMessageId
         ? await tx.message.findFirst({
-            where: { id: data.targetMessageId as string, roomId: ROOM },
+            where: { id: data.targetMessageId as string, roomId: roomId },
           })
         : null;
       if (data.targetMessageId && !target)
         return fail("MESSAGE_NOT_FOUND", 404);
       const rows = await tx.message.findMany({
         where: {
-          roomId: ROOM,
+          roomId: roomId,
           kind: "human",
           ...(target ? { seq: { lte: target.seq } } : {}),
         },
@@ -426,7 +495,7 @@ export class Chat implements OnModuleInit {
       });
       const priorPairs = await tx.message.findMany({
         where: {
-          roomId: ROOM,
+          roomId: roomId,
           kind: { in: ["ai-request", "ai"] },
           ...(target ? { seq: { lte: target.seq } } : {}),
         },
@@ -448,7 +517,7 @@ export class Chat implements OnModuleInit {
         context.push(target);
       const job = await tx.aiJob.create({
         data: {
-          roomId: ROOM,
+          roomId: roomId,
           clientRequestId: requestId,
           prompt: (data.prompt as string).trim(),
           locale: data.locale as string,
@@ -459,7 +528,7 @@ export class Chat implements OnModuleInit {
       });
       const message = await tx.message.create({
         data: {
-          roomId: ROOM,
+          roomId: roomId,
           author: session.name,
           sessionId: session.id,
           kind: "ai-request",
@@ -475,23 +544,33 @@ export class Chat implements OnModuleInit {
       };
     });
     if (result.messages) {
-      this.rt.emit("message:created", {
-        ...result.message,
-        generation: result.job.generation,
-      });
-      this.rt.emit("ai:status", {
-        id: result.job.id,
-        status: "running",
-        generation: result.job.generation,
-      });
+      this.rt.emit(
+        "message:created",
+        {
+          ...result.message,
+          generation: result.job.generation,
+        },
+        roomId,
+      );
+      this.rt.emit(
+        "ai:status",
+        {
+          id: result.job.id,
+          status: "running",
+          generation: result.job.generation,
+        },
+        roomId,
+      );
       void this.runAi(
         result.job.id,
         result.job.generation,
         result.messages,
         result.message!.id,
+        roomId,
       );
     }
     return {
+      roomId,
       id: result.job.id,
       status: result.job.status,
       generation: result.job.generation,
@@ -535,6 +614,7 @@ export class Chat implements OnModuleInit {
     generation: number,
     messages: ReturnType<typeof buildContext>,
     requestMessageId: string,
+    roomId: string,
   ) {
     const controller = new AbortController();
     this.activeJobs.set(id, controller);
@@ -550,13 +630,13 @@ export class Chat implements OnModuleInit {
       }
       const message = await this.db.$transaction(async (tx) => {
         await this.lock(tx);
-        const room = await tx.room.findUniqueOrThrow({ where: { id: ROOM } });
+        const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
         const job = await tx.aiJob.findUniqueOrThrow({ where: { id } });
         if (room.generation !== generation || job.status !== "running")
           return null;
         const message = await tx.message.create({
           data: {
-            roomId: ROOM,
+            roomId: roomId,
             author: "Neuron",
             kind: "ai",
             text,
@@ -571,8 +651,12 @@ export class Chat implements OnModuleInit {
         return message;
       });
       if (message) {
-        this.rt.emit("message:created", { ...message, generation });
-        this.rt.emit("ai:status", { id, status: "completed", generation });
+        this.rt.emit("message:created", { ...message, generation }, roomId);
+        this.rt.emit(
+          "ai:status",
+          { id, status: "completed", generation },
+          roomId,
+        );
       }
     } catch {
       const result = await this.db.aiJob.updateMany({
@@ -580,12 +664,16 @@ export class Chat implements OnModuleInit {
         data: { status: "failed", error: "AI_UNAVAILABLE" },
       });
       if (result.count)
-        this.rt.emit("ai:status", {
-          id,
-          status: "failed",
-          error: "AI_UNAVAILABLE",
-          generation,
-        });
+        this.rt.emit(
+          "ai:status",
+          {
+            id,
+            status: "failed",
+            error: "AI_UNAVAILABLE",
+            generation,
+          },
+          roomId,
+        );
     } finally {
       this.activeJobs.delete(id);
     }
@@ -599,10 +687,8 @@ export class Api {
     @Inject(Auth) private auth: Auth,
     @Inject(Chat) private chat: Chat,
     @Inject(Database) private db: Database,
+    @Inject(Realtime) private rt: Realtime,
   ) {}
-  private room(id: string) {
-    if (id !== ROOM) fail("NOT_FOUND", 404);
-  }
   @Get("health") async health() {
     await this.db.$queryRaw`SELECT 1`;
     return { ok: true };
@@ -632,12 +718,10 @@ export class Api {
       mine === "true" ? await this.auth.require(req.headers.cookie) : null;
     return this.db.listing.findMany({
       where: {
-        id: { not: "demo-listing" },
         ...(owner ? { ownerSessionId: owner.id } : {}),
       },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 100,
-      omit: { ownerSessionId: true },
     });
   }
   @Post("listings") async createListing(
@@ -652,8 +736,7 @@ export class Api {
     });
     if (existing) {
       if (existing.ownerSessionId !== session.id) return fail("FORBIDDEN", 403);
-      const { ownerSessionId: _owner, ...view } = existing;
-      return view;
+      return existing;
     }
     if (!this.listingLimiter.allow(`listing:${session.id}`, 10, 3600000))
       return fail("RATE_LIMIT", 429);
@@ -662,6 +745,7 @@ export class Api {
       created = await this.db.listing.create({
         data: {
           ...listing,
+          authorName: this.auth.view(session).name,
           owner: { connect: { id: session.id } },
           room: { create: { id: `listing-${listing.id}` } },
         },
@@ -678,34 +762,145 @@ export class Api {
       });
     }
     if (created.ownerSessionId !== session.id) return fail("FORBIDDEN", 403);
-    const { ownerSessionId: _owner, ...view } = created;
-    return view;
+    return created;
+  }
+  @Post("auth/logout") async logout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const session = await this.auth.session(req.headers.cookie);
+    if (session) {
+      await this.db.session.update({
+        where: { id: session.id },
+        data: { expiresAt: new Date() },
+      });
+      this.rt.server.in(`user:${session.id}`).disconnectSockets(true);
+    }
+    res.setHeader(
+      "Set-Cookie",
+      serialize(sessionCookie, "", {
+        httpOnly: true,
+        path: "/",
+        maxAge: 0,
+        sameSite: "lax",
+        secure: process.env.COOKIE_SECURE === "true",
+      }),
+    );
+    return { ok: true };
+  }
+  @Get("proposals") async proposals(@Req() req: Request) {
+    const session = await this.auth.require(req.headers.cookie);
+    const rows = await this.db.sessionProposal.findMany({
+      where: {
+        OR: [
+          { senderId: session.id },
+          { ownerId: session.id },
+          ...(session.user.role === "presenter"
+            ? [{ listingId: "demo-listing" }]
+            : []),
+        ],
+      },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    const listings = await this.db.listing.findMany({
+      where: { id: { in: rows.map((r) => r.listingId) } },
+    });
+    return rows.map((row) => ({
+      ...row,
+      incoming: row.senderId !== session.id,
+      listing: listings.find((l) => l.id === row.listingId),
+    }));
+  }
+  @Post("listings/:id/proposals") async propose(
+    @Req() req: Request,
+    @Param("id") id: string,
+  ) {
+    const session = await this.auth.require(req.headers.cookie);
+    const listing = await this.db.listing.findUnique({ where: { id } });
+    if (!listing) return fail("NOT_FOUND", 404);
+    if (
+      listing.ownerSessionId === session.id ||
+      (id === "demo-listing" && session.user.role === "presenter")
+    )
+      return fail("INVALID_INPUT");
+    if (!this.listingLimiter.allow(`propose:${session.id}`, 20, 60000))
+      return fail("RATE_LIMIT", 429);
+    const owner =
+      listing.ownerSessionId ??
+      (id === "demo-listing"
+        ? (
+            await this.db.session.findFirst({
+              where: { userId: "presenter", expiresAt: { gt: new Date() } },
+              orderBy: { createdAt: "desc" },
+            })
+          )?.id
+        : null);
+    const proposal = await this.db.sessionProposal.upsert({
+      where: { listingId_senderId: { listingId: id, senderId: session.id } },
+      create: {
+        listingId: id,
+        senderId: session.id,
+        senderName: this.auth.view(session).name,
+        ownerId: owner,
+      },
+      update: {},
+    });
+    if (owner) this.rt.emit("proposals:changed", {}, `user:${owner}`);
+    this.rt.emit("proposals:changed", {}, `user:${session.id}`);
+    return proposal;
+  }
+  @Post("proposals/:id/respond") async respond(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Body() body: { accept?: unknown },
+  ) {
+    const session = await this.auth.require(req.headers.cookie);
+    if (typeof body?.accept !== "boolean") return fail("INVALID_INPUT");
+    const proposal = await this.db.sessionProposal.findUnique({
+      where: { id },
+    });
+    if (!proposal) return fail("NOT_FOUND", 404);
+    if (
+      proposal.ownerId !== session.id &&
+      !(
+        proposal.listingId === "demo-listing" &&
+        session.user.role === "presenter"
+      )
+    )
+      return fail("FORBIDDEN", 403);
+    await this.db.sessionProposal.updateMany({
+      where: { id, status: "pending" },
+      data: { status: body.accept ? "accepted" : "declined" },
+    });
+    this.rt.emit("proposals:changed", {}, `user:${proposal.senderId}`);
+    this.rt.emit("proposals:changed", {}, `user:${session.id}`);
+    return { ok: true };
   }
   @Get("rooms/:id/messages") async messages(
     @Req() req: Request,
     @Param("id") id: string,
     @Query("after") after?: string,
   ) {
-    this.room(id);
-    await this.auth.require(req.headers.cookie);
-    return this.chat.snapshot(after ? Number(after) : 0);
+    await this.auth.roomAccess(req.headers.cookie, id);
+    return this.chat.snapshot(after ? Number(after) : 0, id);
   }
   @Post("rooms/:id/ai/requests") async ai(
     @Req() req: Request,
     @Param("id") id: string,
     @Body() body: Parameters<Chat["requestAi"]>[1],
   ) {
-    this.room(id);
+    await this.auth.roomAccess(req.headers.cookie, id);
     const session = await this.auth.require(req.headers.cookie, true);
-    return this.chat.requestAi(this.auth.view(session), body);
+    return this.chat.requestAi(this.auth.view(session), body, id);
   }
   @Post("rooms/:id/reset") async reset(
     @Req() req: Request,
     @Param("id") id: string,
   ) {
-    this.room(id);
+    await this.auth.roomAccess(req.headers.cookie, id);
     await this.auth.require(req.headers.cookie, true);
-    return this.chat.reset();
+    return this.chat.reset(id);
   }
 }
 

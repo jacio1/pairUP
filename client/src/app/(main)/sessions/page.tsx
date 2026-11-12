@@ -1,4 +1,4 @@
-import { Sessions } from "@/components/product-pages";
+import { ProposalPage } from "@/components/listings/proposal-page";
 export default function Page() {
-  return <Sessions />;
+  return <ProposalPage mode="sessions" />;
 }

@@ -25,7 +25,7 @@ test("locale preference: cookie, weighted regional languages, unsupported fallba
   assert.equal(resolveLocale(undefined, "en-US;q=0.5,ru-RU;q=0.5"), "en");
 });
 test("both dictionaries expose exactly the same translated keys", () => {
-  for (const key of ["Demo", "Product", "Errors", "Navigation"] as const)
+  for (const key of ["Demo", "Product", "Errors", "Navigation", "Auth", "Flow"] as const)
     assert.deepEqual(Object.keys(en[key]).sort(), Object.keys(ru[key]).sort());
   for (const text of Object.values(ru.Demo)) assert.ok(text.trim());
 });
@@ -95,4 +95,15 @@ test("a large selected answer remains available within the context budget", () =
   );
   assert.match(context[1].content, /selected-answer/);
   assert.ok(context[1].content.length < 12100);
+});
+
+
+test("late responses from another session room are ignored", () => {
+ const store = createStore();
+ store.dispatch(actions.room("room-current"));
+ store.dispatch(actions.generation(0));
+ store.dispatch(actions.merge([{id:"old",seq:1,roomId:"room-other",generation:0,author:"Other",sessionId:1,text:"Private",kind:"human",targetMessageId:null,createdAt:new Date().toISOString()}]));
+ store.dispatch(actions.ai({id:"old-job",status:"running",roomId:"room-other",generation:0}));
+ assert.equal(store.getState().chat.messages.length,0);
+ assert.equal(store.getState().chat.ai,null);
 });
