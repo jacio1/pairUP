@@ -25,6 +25,7 @@ import { Server, Socket } from "socket.io";
 import { parse, serialize } from "cookie";
 import { randomBytes } from "node:crypto";
 import type { Request, Response } from "express";
+import { parseListing } from "./listings";
 import {
   ROOM,
   hash,
@@ -593,6 +594,7 @@ export class Chat implements OnModuleInit {
 
 @Controller("api")
 export class Api {
+  private listingLimiter = new RateLimiter();
   constructor(
     @Inject(Auth) private auth: Auth,
     @Inject(Chat) private chat: Chat,
@@ -622,8 +624,62 @@ export class Api {
     const session = await this.auth.session(req.headers.cookie);
     return session ? this.auth.view(session) : null;
   }
-  @Get("listings") listings() {
-    return this.db.listing.findMany();
+  @Get("listings") async listings(
+    @Req() req: Request,
+    @Query("mine") mine?: string,
+  ) {
+    const owner =
+      mine === "true" ? await this.auth.require(req.headers.cookie) : null;
+    return this.db.listing.findMany({
+      where: {
+        id: { not: "demo-listing" },
+        ...(owner ? { ownerSessionId: owner.id } : {}),
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 100,
+      omit: { ownerSessionId: true },
+    });
+  }
+  @Post("listings") async createListing(
+    @Req() req: Request,
+    @Body() body: unknown,
+  ) {
+    const session = await this.auth.require(req.headers.cookie);
+    const listing = parseListing(body);
+    if (!listing) return fail("INVALID_INPUT");
+    const existing = await this.db.listing.findUnique({
+      where: { id: listing.id },
+    });
+    if (existing) {
+      if (existing.ownerSessionId !== session.id) return fail("FORBIDDEN", 403);
+      const { ownerSessionId: _owner, ...view } = existing;
+      return view;
+    }
+    if (!this.listingLimiter.allow(`listing:${session.id}`, 10, 3600000))
+      return fail("RATE_LIMIT", 429);
+    let created;
+    try {
+      created = await this.db.listing.create({
+        data: {
+          ...listing,
+          owner: { connect: { id: session.id } },
+          room: { create: { id: `listing-${listing.id}` } },
+        },
+      });
+    } catch (error) {
+      // A concurrent retry can reach create before the first publication commits.
+      if (
+        !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+        error.code !== "P2002"
+      )
+        throw error;
+      created = await this.db.listing.findUniqueOrThrow({
+        where: { id: listing.id },
+      });
+    }
+    if (created.ownerSessionId !== session.id) return fail("FORBIDDEN", 403);
+    const { ownerSessionId: _owner, ...view } = created;
+    return view;
   }
   @Get("rooms/:id/messages") async messages(
     @Req() req: Request,

@@ -1,4 +1,6 @@
 "use client";
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group";
+import { Label } from "./ui/label";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
@@ -14,9 +16,11 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
   const t = useTranslations("Product");
   const selected = mounted ? theme || "system" : "system";
   return (
-    <div
-      className={expanded ? "theme-switch expanded" : "theme-switch"}
-      role="radiogroup"
+    <RadioGroup
+      className="flex flex-wrap gap-2"
+      value={selected}
+      onValueChange={(value) => setTheme(String(value))}
+      disabled={!mounted}
       aria-label={t("appearance")}
     >
       {[
@@ -24,20 +28,16 @@ export function ThemeToggle({ expanded = false }: { expanded?: boolean }) {
         { value: "dark", key: "darkTheme", icon: Moon },
         { value: "system", key: "systemTheme", icon: Monitor },
       ].map(({ value, key, icon: Icon }) => (
-        <button
+        <Label
           key={value}
-          type="button"
-          role="radio"
-          aria-label={t(key)}
-          aria-checked={selected === value}
+          className="flex cursor-pointer items-center gap-2 rounded-md border border-input px-3 py-2 text-sm has-[[data-checked]]:border-primary has-[[data-checked]]:bg-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring"
           title={t(key)}
-          disabled={!mounted}
-          onClick={() => setTheme(value)}
         >
+          <RadioGroupItem value={value} aria-label={t(key)} />
           <Icon size={16} />
           {expanded && <span>{t(key)}</span>}
-        </button>
+        </Label>
       ))}
-    </div>
+    </RadioGroup>
   );
 }

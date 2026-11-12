@@ -26,7 +26,7 @@ export default async function RootLayout({
   const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body>
+      <body className="flex h-dvh flex-col overflow-hidden">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider
             attribute="class"
@@ -35,7 +35,9 @@ export default async function RootLayout({
             disableTransitionOnChange
           >
             <Providers>
-              <Shell>{children}</Shell>
+              <main className="min-w-0 flex-1 overflow-y-auto">
+                <Shell>{children}</Shell>
+              </main>
             </Providers>
           </ThemeProvider>
         </NextIntlClientProvider>

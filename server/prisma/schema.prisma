@@ -14,18 +14,34 @@ model User {
 }
 
 model Session {
-  id        Int      @id @default(autoincrement())
-  tokenHash String   @unique
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique
   userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  listings  Listing[]
 }
 
 model Listing {
-  id     String @id
-  roomId String @unique
-  room   Room   @relation(fields: [roomId], references: [id])
+  id             String   @id
+  roomId         String   @unique
+  room           Room     @relation(fields: [roomId], references: [id])
+  ownerSessionId Int?
+  owner          Session? @relation(fields: [ownerSessionId], references: [id], onDelete: SetNull)
+  authorName     String   @default("")
+  title          String   @default("")
+  subject        String   @default("")
+  level          String   @default("")
+  goal           String   @default("")
+  format         String   @default("online")
+  schedule       String   @default("")
+  location       String   @default("")
+  description    String   @default("")
+  createdAt      DateTime @default(now())
+
+  @@index([ownerSessionId, createdAt])
+  @@index([createdAt])
 }
 
 model Room {
@@ -48,6 +64,7 @@ model Message {
   clientRequestId String   @unique
   targetMessageId String?
   createdAt       DateTime @default(now())
+
   @@index([roomId, seq])
 }
 
@@ -65,5 +82,6 @@ model AiJob {
   error           String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+
   @@index([roomId, createdAt])
 }

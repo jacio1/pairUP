@@ -1,5 +1,6 @@
 import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { Listing, CreateListingInput } from "./local-data";
 
 export type Session = { id: number; name: string; role: "guest" | "presenter" };
 export type Message = {
@@ -28,7 +29,16 @@ export type Snapshot = {
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ baseUrl: "/api", credentials: "include" }),
+  tagTypes: ["Listings"],
   endpoints: (builder) => ({
+    listings: builder.query<Listing[], number | void>({
+      query: (sessionId) => (sessionId ? "/listings?mine=true" : "/listings"),
+      providesTags: ["Listings"],
+    }),
+    createListing: builder.mutation<Listing, CreateListingInput>({
+      query: (body) => ({ url: "/listings", method: "POST", body }),
+      invalidatesTags: ["Listings"],
+    }),
     me: builder.query<Session | null, void>({ query: () => "/me" }),
     login: builder.mutation<Session, { password?: string }>({
       query: (data) => ({
@@ -158,4 +168,6 @@ export const {
   useLoginMutation,
   useAskMutation,
   useResetMutation,
+  useListingsQuery,
+  useCreateListingMutation,
 } = api;

@@ -7,7 +7,6 @@ export type ListingDraft = {
   schedule: string;
   location: string;
   description: string;
-  savedAt: string;
 };
 export const emptyListing: ListingDraft = {
   title: "",
@@ -18,7 +17,35 @@ export const emptyListing: ListingDraft = {
   schedule: "",
   location: "",
   description: "",
-  savedAt: "",
+};
+export const listingSubjects = [
+  "math",
+  "physics",
+  "chemistry",
+  "biology",
+  "computerScience",
+  "english",
+  "russian",
+  "history",
+  "socialStudies",
+  "other",
+] as const;
+export const listingLevels = [
+  "beginner",
+  "intermediate",
+  "advanced",
+  "olympiad",
+  "examPreparation",
+] as const;
+export type Listing = ListingDraft & {
+  id: string;
+  roomId: string;
+  authorName: string;
+  createdAt: string;
+};
+export type CreateListingInput = ListingDraft & {
+  id: string;
+  authorName: string;
 };
 export type StudyProfile = {
   name: string;

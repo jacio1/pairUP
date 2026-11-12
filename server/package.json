@@ -9,7 +9,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "test": "tsx --test test/*.test.ts",
-    "test:integration": "tsx --test test/integration.ts",
+    "test:integration": "tsx --test --test-concurrency=1 test/integration.ts test/listings.integration.ts",
     "test:load": "tsx test/load.ts"
   },
   "dependencies": {
