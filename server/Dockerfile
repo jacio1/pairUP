@@ -8,6 +8,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run db:generate && npm run build
 ENV NODE_ENV=production
+RUN mkdir -p /app/uploads && chown node:node /app/uploads
 USER node
 EXPOSE 4000
 CMD ["sh", "-c", "npm run db:migrate && node dist/main.js"]

@@ -2,9 +2,17 @@ import { Shell } from "@/components/layout/shell";
 import { Providers } from "@/components/providers";
 import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata, Viewport } from "next";
+import localFont from "next/font/local";
 import { NextIntlClientProvider } from "next-intl";
 import { getLocale, getMessages, getTranslations } from "next-intl/server";
 import "./globals.css";
+
+const manrope = localFont({
+  src: "./fonts/Manrope-Variable.ttf",
+  variable: "--font-manrope",
+  display: "swap",
+  weight: "200 800",
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations("Demo");
@@ -15,7 +23,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#7848ef",
+  themeColor: "#6055d8",
 };
 
 export default async function RootLayout({
@@ -25,8 +33,8 @@ export default async function RootLayout({
 }) {
   const [locale, messages] = await Promise.all([getLocale(), getMessages()]);
   return (
-    <html lang={locale} suppressHydrationWarning>
-      <body className="flex h-dvh flex-col overflow-hidden">
+    <html lang={locale} className={manrope.variable} suppressHydrationWarning>
+      <body className="flex h-dvh flex-col overflow-hidden font-sans">
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ThemeProvider
             attribute="class"

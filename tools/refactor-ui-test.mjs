@@ -263,6 +263,7 @@ try {
   await db.sessionProposal.deleteMany({ where: { listingId: { in: ids } } });
   await db.listing.deleteMany({ where: { id: { in: ids } } });
   await db.room.deleteMany({ where: { id: { in: rooms } } });
+  await db.publicProfile.deleteMany({ where: { sessionId: { in: sessions } } });
   await db.session.deleteMany({ where: { id: { in: sessions } } });
   await db.$disconnect();
 }

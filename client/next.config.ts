@@ -3,6 +3,7 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const config: NextConfig = {
   devIndicators: false,
+  experimental: { proxyClientMaxBodySize: "55mb" },
   output: "standalone",
   allowedDevOrigins: ["192.168.0.102"],
   async rewrites() {

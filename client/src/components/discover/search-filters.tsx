@@ -27,11 +27,11 @@ export function SearchFilters() {
     Object.keys(defaultFilters) as (keyof typeof defaultFilters)[]
   ).filter((key) => filters[key] !== defaultFilters[key]).length;
   return (
-    <section className="mb-6" aria-label={p("searchListings")}>
+    <section className="mb-8" aria-label={p("searchListings")}>
       <form className="relative" onSubmit={(event) => event.preventDefault()}>
         <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          className="h-12 rounded-xl bg-card pr-20 pl-11 text-base shadow-none sm:pr-36 sm:text-sm"
+          className="h-14 rounded-2xl border-border bg-card pr-20 pl-12 text-base shadow-none sm:pr-36 sm:text-sm"
           aria-label={p("searchListings")}
           placeholder={p("searchPlaceholder")}
         />

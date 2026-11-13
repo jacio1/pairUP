@@ -1,6 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, RotateCcw, Sparkles } from "lucide-react";
+import { RotateCcw } from "lucide-react";
+import { NeuronMascot } from "@/components/neuron-mascot";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef } from "react";
 import { MessageItem } from "./message-item";
@@ -37,9 +38,7 @@ export function MessageList({
     >
       <div className="mx-auto max-w-3xl space-y-4">
         <div className="mx-auto mb-8 max-w-sm rounded-2xl border border-border/60 bg-card/80 px-5 py-4 text-center">
-          <span className="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-primary/8 text-primary">
-            <GraduationCap className="size-4" />
-          </span>
+          <NeuronMascot className="mx-auto mb-2 size-20" />
           <h2 className="text-xs font-semibold">
             {listing?.title || "PairUp"}
           </h2>
@@ -64,7 +63,11 @@ export function MessageList({
             className="flex items-center gap-2 text-xs text-muted-foreground"
             role="status"
           >
-            <Sparkles className="size-3.5 animate-pulse" />
+            <NeuronMascot
+              icon
+              decorative
+              className="size-7 motion-safe:animate-pulse"
+            />
             {t("thinking")}…
           </p>
         )}

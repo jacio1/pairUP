@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ListingAuthor } from "./listing-author";
 export function ListingDetails({ id }: { id: string }) {
   const t = useTranslations("Product");
   const f = useTranslations("Flow");
@@ -53,18 +54,14 @@ export function ListingDetails({ id }: { id: string }) {
       <Link href="/" className="text-sm text-muted-foreground">
         ← {f("details")}
       </Link>
-      <Card className="p-6 sm:p-8">
+      <Card className="gap-6 rounded-[24px] p-6 sm:p-8">
         <div className="flex flex-wrap gap-2">
           <Badge>{t(listing.subject)}</Badge>
           <Badge variant="secondary">{t(listing.level)}</Badge>
           <Badge variant="outline">{t(listing.format)}</Badge>
         </div>
-        <h1 className="text-3xl font-semibold wrap-anywhere">
-          {listing.title}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {f("author", { name: listing.authorName })}
-        </p>
+        <h1 className="page-title wrap-anywhere">{listing.title}</h1>
+        <ListingAuthor listing={listing} />
         <p className="flex gap-2 font-medium">
           <Target className="size-5 shrink-0 text-primary" />
           {listing.goal}

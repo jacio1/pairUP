@@ -42,6 +42,8 @@ export type Listing = ListingDraft & {
   roomId: string;
   publicId: number;
   ownerSessionId?: number | null;
+  authorProfileId?: number | null;
+  authorProfile?: { id: number; name: string; avatar: string } | null;
   authorName: string;
   createdAt: string;
 };

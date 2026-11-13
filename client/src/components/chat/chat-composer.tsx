@@ -3,13 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/lib/hooks";
 import { actions } from "@/lib/store";
-import { ArrowUp, Paperclip, Sparkles, WifiOff } from "lucide-react";
+import { ArrowUp, Paperclip, WifiOff } from "lucide-react";
+import { NeuronMascot } from "@/components/neuron-mascot";
 import { useTranslations } from "next-intl";
 import { NeuronContext } from "./neuron-context";
 import type { ChatActions } from "./use-chat-actions";
+import { useRoomUploads } from "@/components/files/upload-provider";
+import { UploadProgress } from "@/components/files/upload-progress";
 export function ChatComposer({
   chat,
-  onFiles,
 }: {
   chat: Pick<
     ChatActions,
@@ -27,12 +29,12 @@ export function ChatComposer({
     | "busy"
     | "error"
   >;
-  onFiles: () => void;
 }) {
   const t = useTranslations("Demo");
   const room = useTranslations("Room");
   const errors = useTranslations("Errors");
   const dispatch = useAppDispatch();
+  const { choose } = useRoomUploads();
   const {
     connected,
     presenter,
@@ -50,6 +52,7 @@ export function ChatComposer({
   return (
     <div className="shrink-0 border-t border-border bg-card px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] sm:px-6">
       <div className="mx-auto max-w-3xl">
+        <UploadProgress />
         {!connected && (
           <p
             className="mb-2 flex items-center gap-1.5 text-[11px] text-muted-foreground"
@@ -71,7 +74,7 @@ export function ChatComposer({
             }
             aria-pressed={aiMode}
           >
-            <Sparkles className="size-3.5" />
+            <NeuronMascot icon decorative className="size-6" />
             {t("askNeuron")}
           </Button>
           <span
@@ -87,40 +90,49 @@ export function ChatComposer({
             type="button"
             variant="ghost"
             size="icon"
-            onClick={onFiles}
+            onClick={choose}
             aria-label={room("files")}
           >
             <Paperclip className="size-5 text-muted-foreground" />
           </Button>
-          <Input
-            ref={input}
-            className="h-11 min-w-0 flex-1 rounded-xl bg-muted/40 text-base shadow-none sm:text-sm"
-            aria-label={t(aiMode ? "askPlaceholder" : "messagePlaceholder")}
-            placeholder={t(aiMode ? "askPlaceholder" : "messagePlaceholder")}
-            value={aiMode ? aiDraft : draft}
-            maxLength={aiMode ? 2000 : 1000}
-            onChange={(event) =>
-              dispatch(
-                aiMode
-                  ? actions.aiDraft(event.target.value)
-                  : actions.draft(event.target.value),
-              )
-            }
-            onKeyDown={(event) => {
-              if (
-                event.key === "Enter" &&
-                !event.shiftKey &&
-                !event.nativeEvent.isComposing
-              ) {
-                event.preventDefault();
-                void send();
+          <div className="relative min-w-0 flex-1">
+            {aiMode && (
+              <NeuronMascot
+                icon
+                decorative
+                className="pointer-events-none absolute top-1/2 left-2 z-10 size-7 -translate-y-1/2"
+              />
+            )}
+            <Input
+              ref={input}
+              className={`h-12 w-full rounded-xl border-border bg-background text-base shadow-none sm:text-sm ${aiMode ? "border-primary/40 pl-11" : ""}`}
+              aria-label={t(aiMode ? "askPlaceholder" : "messagePlaceholder")}
+              placeholder={t(aiMode ? "askPlaceholder" : "messagePlaceholder")}
+              value={aiMode ? aiDraft : draft}
+              maxLength={aiMode ? 2000 : 1000}
+              onChange={(event) =>
+                dispatch(
+                  aiMode
+                    ? actions.aiDraft(event.target.value)
+                    : actions.draft(event.target.value),
+                )
               }
-            }}
-          />
+              onKeyDown={(event) => {
+                if (
+                  event.key === "Enter" &&
+                  !event.shiftKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault();
+                  void send();
+                }
+              }}
+            />
+          </div>
           <Button
             type="submit"
             size="icon"
-            className="size-11 rounded-xl"
+            className="size-12 rounded-xl"
             aria-label={t("send")}
             disabled={
               !connected ||

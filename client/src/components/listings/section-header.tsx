@@ -19,7 +19,7 @@ export function SectionHeader({
           <Icon className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="mb-1 text-[10px] font-semibold tracking-widest text-muted-foreground">
+          <p className="mb-1 text-xs font-medium text-muted-foreground">
             {number}
           </p>
           <CardTitle className="text-base">{title}</CardTitle>
