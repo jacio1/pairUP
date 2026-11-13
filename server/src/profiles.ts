@@ -17,6 +17,16 @@ const publicFields = {
 export const profileAuthor = {
   select: { id: true, name: true, avatar: true },
 } as const;
+export const messageAuthor = (
+  db: Pick<PrismaClient, "publicProfile">,
+  session: { id: number; name: string },
+) =>
+  db.publicProfile.upsert({
+    where: { sessionId: session.id },
+    create: { sessionId: session.id, name: session.name },
+    update: {},
+    select: profileAuthor.select,
+  });
 export function parseProfile(input: unknown) {
   if (!input || typeof input !== "object") return null;
   const body = input as Record<string, unknown>;
@@ -60,6 +70,15 @@ export class Profiles {
       update: {},
       select: publicFields,
     });
+  }
+  async summary(id: number) {
+    if (!Number.isSafeInteger(id) || id < 1) return toolError("NOT_FOUND", 404);
+    const profile = await this.db.publicProfile.findUnique({
+      where: { id },
+      select: publicFields,
+    });
+    if (!profile) return toolError("NOT_FOUND", 404);
+    return profile;
   }
   async get(id: number) {
     if (!Number.isSafeInteger(id) || id < 1) return toolError("NOT_FOUND", 404);

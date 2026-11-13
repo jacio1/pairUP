@@ -7,7 +7,7 @@ export const filesApi = api
       roomFiles: builder.query<Attachment[], string>({
         query: (roomId) => `/rooms/${encodeURIComponent(roomId)}/files`,
         providesTags: (_, __, id) => [{ type: "RoomFiles", id }],
-        keepUnusedDataFor: 30,
+        keepUnusedDataFor: 120,
       }),
     }),
   });

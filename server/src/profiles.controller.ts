@@ -20,6 +20,13 @@ export class ProfilesController {
     @Inject("PROFILE_ACCESS") private auth: Auth,
     @Inject(Profiles) private profiles: Profiles,
   ) {}
+  @Get("profiles/:id/summary") async summary(
+    @Param("id") id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    res.setHeader("Cache-Control", "no-store");
+    return this.profiles.summary(Number(id));
+  }
   @Get("profiles/:id") async publicProfile(
     @Param("id") id: string,
     @Res({ passthrough: true }) res: Response,

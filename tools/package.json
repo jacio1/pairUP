@@ -15,6 +15,8 @@
     "test:voice-ui": "node voice-ui-test.mjs",
     "test:study-tools": "node study-tools-test.mjs",
     "test:profiles": "node profiles-test.mjs",
+    "test:chat-history": "node chat-history-test.mjs",
+    "test:activities": "node activities-test.mjs",
     "test:files": "node files-test.mjs"
   },
   "dependencies": {

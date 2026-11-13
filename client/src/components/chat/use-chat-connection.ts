@@ -2,7 +2,7 @@ import { usePathname } from "next/navigation";
 import { useEffect } from "react";
 
 import { bindChatSocket } from "@/lib/chat-transport";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
+import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/hooks";
 import {
   actions,
   api,
@@ -14,6 +14,7 @@ import { io } from "socket.io-client";
 import { studyApi } from "@/lib/study-tools-api";
 import { filesApi } from "@/lib/files-api";
 export function useChatConnection() {
+  const store = useAppStore();
   const dispatch = useAppDispatch();
   const pathname = usePathname();
   const roomId = pathname.startsWith("/messages/")
@@ -41,7 +42,7 @@ export function useChatConnection() {
     let bufferedAi: AiStatus | undefined;
     let retryTimer: ReturnType<typeof setTimeout> | undefined;
     const buffer: Message[] = [];
-    async function synchronize() {
+    async function synchronize(fresh = false) {
       if (!roomId) return;
       clearTimeout(retryTimer);
       const current = ++syncNumber;
@@ -51,7 +52,9 @@ export function useChatConnection() {
       bufferedAi = undefined;
       dispatch(actions.connected(false));
       try {
-        let after = 0;
+        const state = store.getState().chat;
+        let after: number | undefined =
+          !fresh && state.historyReady ? state.messages.at(-1)?.seq : undefined;
         do {
           const result = await dispatch(
             api.endpoints.snapshot.initiate(
@@ -63,7 +66,29 @@ export function useChatConnection() {
             ),
           ).unwrap();
           if (disposed || current !== syncNumber) return;
+          if (
+            after !== undefined &&
+            result.generation !== store.getState().chat.generation
+          ) {
+            after = undefined;
+            continue;
+          }
           dispatch(actions.generation(result.generation));
+          if (result.mode !== "after")
+            dispatch(
+              actions.history({
+                roomId,
+                generation: result.generation,
+                hasOlder: result.hasOlder,
+              }),
+            );
+          dispatch(
+            actions.references({
+              roomId,
+              generation: result.generation,
+              items: result.references,
+            }),
+          );
           dispatch(actions.merge(result.messages));
           dispatch(actions.ai(result.ai));
           if (!result.hasMore) break;
@@ -130,7 +155,7 @@ export function useChatConnection() {
       else dispatch(actions.ai(status));
     });
     socket.on("room:reset", () => {
-      void synchronize();
+      void synchronize(true);
     });
     socket.on("session:expired", () => {
       dispatch(actions.session(null));
@@ -153,5 +178,5 @@ export function useChatConnection() {
       releaseSocket();
       dispatch(actions.connected(false));
     };
-  }, [sessionId, roomId, dispatch]);
+  }, [sessionId, roomId, dispatch, store]);
 }

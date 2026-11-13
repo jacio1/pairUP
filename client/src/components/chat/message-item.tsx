@@ -1,4 +1,5 @@
 "use client";
+import { MessageProfile } from "./message-profile";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { type Message } from "@/lib/store";
@@ -13,7 +14,7 @@ export function MessageItem({
   mode,
 }: {
   message: Message;
-  parent?: Message;
+  parent?: Pick<Message, "text">;
   mine: boolean;
   presenter: boolean;
   mode: (message: Message) => void;
@@ -21,31 +22,47 @@ export function MessageItem({
   const t = useTranslations("Demo");
   const format = useFormatter();
   const neuron = message.kind === "ai";
+  const media =
+    message.attachment?.kind === "image" ||
+    message.attachment?.kind === "video";
   return (
     <article
       key={message.id}
+      data-message-id={message.id}
       className={`flex items-end gap-2 ${mine ? "flex-row-reverse" : ""}`}
     >
       {!mine && (
-        <Avatar className="mb-1 size-7 shrink-0">
+        <Avatar className="mb-1 size-7 shrink-0 after:pointer-events-none">
           <AvatarFallback
             className={`text-[10px] ${neuron ? "bg-primary/10 text-primary" : ""}`}
           >
             {neuron ? (
               <NeuronMascot icon decorative className="size-7" />
             ) : (
-              message.author.slice(0, 1)
+              <MessageProfile message={message}>
+                {message.author.slice(0, 1)}
+              </MessageProfile>
             )}
           </AvatarFallback>
         </Avatar>
       )}
-      <div className="min-w-0 max-w-[85%] sm:max-w-[75%]">
+      <div
+        className={
+          media
+            ? "min-w-0 w-[85%] max-w-[420px] sm:w-[75%]"
+            : "min-w-0 max-w-[85%] sm:max-w-[75%]"
+        }
+      >
         <div
-          className={`rounded-2xl px-4 py-3 ${mine ? "rounded-br-md bg-[var(--message-sent)] text-[var(--message-sent-foreground)]" : "rounded-bl-md border border-border bg-card"}`}
+          className={
+            media
+              ? "min-w-0"
+              : `rounded-2xl px-4 py-3 ${mine ? "rounded-br-md bg-[var(--message-sent)] text-[var(--message-sent-foreground)]" : "rounded-bl-md border border-border bg-card"}`
+          }
         >
           {!mine && (
             <p className="mb-1 text-[11px] font-semibold text-primary">
-              {neuron ? t("neuron") : message.author}
+              {neuron ? t("neuron") : <MessageProfile message={message} />}
             </p>
           )}
           {message.kind === "ai-request" && (
@@ -71,7 +88,7 @@ export function MessageItem({
             </p>
           )}
           <time
-            className={`mt-2 block text-right text-[11px] tabular-nums ${mine ? "text-[var(--message-sent-foreground)]" : "text-muted-foreground"}`}
+            className={`mt-2 block text-right text-[11px] tabular-nums ${mine && !media ? "text-[var(--message-sent-foreground)]" : "text-muted-foreground"}`}
             dateTime={message.createdAt}
           >
             {format.dateTime(new Date(message.createdAt), {

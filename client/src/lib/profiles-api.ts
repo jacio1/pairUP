@@ -17,6 +17,11 @@ export const profilesApi = api
         providesTags: ["MyProfile"],
         keepUnusedDataFor: 0,
       }),
+      profileSummary: builder.query<StudyProfile & { id: number }, string>({
+        query: (id) => `/profiles/${encodeURIComponent(id)}/summary`,
+        providesTags: (_, __, id) => [{ type: "PublicProfile", id }],
+        keepUnusedDataFor: 60,
+      }),
       publicProfile: builder.query<PublicProfile, string>({
         query: (id) => `/profiles/${encodeURIComponent(id)}`,
         providesTags: (_, __, id) => [{ type: "PublicProfile", id }],
@@ -33,6 +38,7 @@ export const profilesApi = api
     }),
   });
 export const {
+  useProfileSummaryQuery,
   useMyProfileQuery,
   usePublicProfileQuery,
   useSaveProfileMutation,

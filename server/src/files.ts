@@ -1,3 +1,4 @@
+import { messageAuthor, profileAuthor } from "./profiles";
 import { Inject, Injectable } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
 import { validId } from "./core";
@@ -78,10 +79,12 @@ export class Files {
         )
           return toolError("ROOM_STORAGE_LIMIT", 413);
         const message = await tx.message.create({
+          include: { authorProfile: profileAuthor },
           data: {
             roomId,
             sessionId: session.id,
             author: session.name,
+            authorProfileId: (await messageAuthor(tx, session)).id,
             kind: "attachment",
             text: name,
             clientRequestId,

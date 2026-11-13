@@ -1,3 +1,5 @@
+import { RoomActivities } from "./room-activities";
+import { historyWindow, HISTORY_PAGE_SIZE } from "./history";
 import {
   Controller,
   Get,
@@ -29,7 +31,7 @@ import { parseListing } from "./listings";
 import { VoiceService } from "./voice";
 import { StudyTools } from "./study-tools";
 import { StudyToolsController } from "./study-tools.controller";
-import { Profiles, profileAuthor } from "./profiles";
+import { Profiles, profileAuthor, messageAuthor } from "./profiles";
 import { ProfilesController } from "./profiles.controller";
 import { Files, attachmentFields } from "./files";
 import { FilesController, FileRoomGuard } from "./files.controller";
@@ -353,28 +355,58 @@ export class Chat implements OnModuleInit {
   async lock(tx: Prisma.TransactionClient) {
     await tx.$executeRaw`SELECT pg_advisory_xact_lock(735901)`;
   }
-  async snapshot(after = 0, roomId = ROOM) {
-    if (!Number.isSafeInteger(after) || after < 0) return fail("INVALID_INPUT");
+  async snapshot(
+    after: number | undefined = undefined,
+    roomId = ROOM,
+    before?: number,
+    generation?: number,
+  ) {
+    const window = historyWindow(after, before);
     return this.db.$transaction(async (tx) => {
       await this.lock(tx);
       const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
+      if (generation !== undefined && generation !== room.generation)
+        return fail("HISTORY_CHANGED", 409);
       const messages = await tx.message.findMany({
-        include: { attachment: { select: attachmentFields } },
-        where: { roomId: roomId, seq: { gt: after } },
-        orderBy: { seq: "asc" },
-        take: 500,
+        include: {
+          attachment: { select: attachmentFields },
+          authorProfile: profileAuthor,
+        },
+        where: { roomId: roomId, seq: window.where },
+        orderBy: { seq: window.order },
+        take: HISTORY_PAGE_SIZE + 1,
       });
+      const parentIds = messages
+        .slice(0, HISTORY_PAGE_SIZE)
+        .flatMap((m) => (m.targetMessageId ? [m.targetMessageId] : []));
+      const references = parentIds.length
+        ? await tx.message.findMany({
+            where: { roomId, id: { in: parentIds } },
+            select: { id: true, text: true },
+          })
+        : [];
       const job = await tx.aiJob.findFirst({
         where: { roomId: roomId, generation: room.generation },
         orderBy: { createdAt: "desc" },
       });
       return {
-        messages: messages.map((message) => ({
+        references: references.map((m) => ({
+          ...m,
+          text: m.text.slice(0, 160),
+        })),
+        roomId,
+        mode: window.mode,
+        hasOlder:
+          window.mode !== "after" && messages.length > HISTORY_PAGE_SIZE,
+        messages: (window.order === "desc"
+          ? messages.slice(0, HISTORY_PAGE_SIZE).reverse()
+          : messages.slice(0, HISTORY_PAGE_SIZE)
+        ).map((message) => ({
           ...message,
           generation: room.generation,
         })),
         generation: room.generation,
-        hasMore: messages.length === 500,
+        hasMore: window.mode === "after" && messages.length > HISTORY_PAGE_SIZE,
         ai: job
           ? {
               id: job.id,
@@ -399,6 +431,7 @@ export class Chat implements OnModuleInit {
       await this.lock(tx);
       const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
       const existing = await tx.message.findUnique({
+        include: { authorProfile: profileAuthor },
         where: { clientRequestId: requestId },
       });
       if (existing)
@@ -410,9 +443,11 @@ export class Chat implements OnModuleInit {
         return fail("RATE_LIMIT", 429);
       return {
         message: await tx.message.create({
+          include: { authorProfile: profileAuthor },
           data: {
             roomId: roomId,
             author: session.name,
+            authorProfileId: (await messageAuthor(tx, session)).id,
             sessionId: session.id,
             text: (data.text as string).trim(),
             clientRequestId: requestId,
@@ -541,9 +576,11 @@ export class Chat implements OnModuleInit {
         },
       });
       const message = await tx.message.create({
+        include: { authorProfile: profileAuthor },
         data: {
           roomId: roomId,
           author: session.name,
+          authorProfileId: (await messageAuthor(tx, session)).id,
           sessionId: session.id,
           kind: "ai-request",
           text: job.prompt,
@@ -912,9 +949,16 @@ export class Api {
     @Req() req: Request,
     @Param("id") id: string,
     @Query("after") after?: string,
+    @Query("before") before?: string,
+    @Query("generation") generation?: string,
   ) {
     await this.auth.roomAccess(req.headers.cookie, id);
-    return this.chat.snapshot(after ? Number(after) : 0, id);
+    return this.chat.snapshot(
+      after === undefined ? undefined : Number(after),
+      id,
+      before === undefined ? undefined : Number(before),
+      generation === undefined ? undefined : Number(generation),
+    );
   }
   @Post("rooms/:id/ai/requests") async ai(
     @Req() req: Request,
@@ -944,6 +988,7 @@ export class Api {
     Chat,
     VoiceService,
     StudyTools,
+    RoomActivities,
     Profiles,
     Files,
     FileRoomGuard,

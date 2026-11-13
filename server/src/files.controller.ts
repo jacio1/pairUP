@@ -63,17 +63,15 @@ export class FileErrorFilter implements ExceptionFilter {
       error instanceof HttpException
         ? (error.getResponse() as { code?: string })?.code
         : undefined;
-    response
-      .status(status)
-      .json({
-        code:
-          code ||
-          (status === 413
-            ? "FILE_TOO_LARGE"
-            : status === 400
-              ? "INVALID_UPLOAD"
-              : "SERVER_ERROR"),
-      });
+    response.status(status).json({
+      code:
+        code ||
+        (status === 413
+          ? "FILE_TOO_LARGE"
+          : status === 400
+            ? "INVALID_UPLOAD"
+            : "SERVER_ERROR"),
+    });
   }
 }
 @Controller("api/rooms/:roomId/files")
@@ -139,6 +137,8 @@ export class FilesController {
     res.setHeader("Content-Security-Policy", "default-src 'none'; sandbox");
     if (download === "1" || file.kind === "file")
       return res.download(path, file.name);
+    res.setHeader("Cache-Control", "private, no-cache, must-revalidate");
+    res.setHeader("ETag", `"media-${file.id}-${file.size}"`);
     res.type(file.mime);
     return res.sendFile(path, { acceptRanges: true });
   }
