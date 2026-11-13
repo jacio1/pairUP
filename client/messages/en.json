@@ -364,5 +364,29 @@
     "author": "Posted by {name}",
     "sessionTitle": "Study session",
     "goChat": "Open chat"
+  },
+  "Voice": {
+    "title": "Voice chat",
+    "idle": "Not connected",
+    "connecting": "Connecting…",
+    "connected": "Connected",
+    "reconnecting": "Reconnecting…",
+    "join": "Join voice",
+    "leave": "Leave voice",
+    "unmute": "Enable microphone",
+    "mute": "Mute",
+    "enableAudio": "Enable sound",
+    "participants": "Voice participants",
+    "speaking": "Speaking",
+    "muted": "Microphone off",
+    "listening": "Listening",
+    "VOICE_UNAVAILABLE": "Voice chat is not configured yet. Text chat is available.",
+    "UNAUTHORIZED": "Your session expired. Sign in again.",
+    "FORBIDDEN": "You do not have access to this room.",
+    "RATE_LIMIT": "Too many attempts. Try again in a minute.",
+    "connectionError": "Could not connect to voice. Please try again.",
+    "disconnected": "Voice connection ended. You can join again.",
+    "microphoneError": "Microphone unavailable. Check browser permissions and your device.",
+    "playbackError": "Could not play audio. Check browser permissions."
   }
 }

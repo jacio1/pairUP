@@ -11,6 +11,7 @@ import { RoomHeader } from "./room-header";
 import { ToolNav } from "./tool-nav";
 import { ToolSidebar } from "./tool-sidebar";
 import { useChatActions } from "./use-chat-actions";
+import { VoicePanel } from "@/components/voice/voice-panel";
 export function ChatRoom({ roomId }: { roomId: string }) {
   const chat = useChatActions(roomId);
   const { session, listing } = chat;
@@ -19,6 +20,7 @@ export function ChatRoom({ roomId }: { roomId: string }) {
   return (
     <main className="flex h-dvh min-h-0 w-full flex-col overflow-hidden bg-background">
       <RoomHeader chat={chat} />
+      <VoicePanel roomId={roomId} />
       <Tabs
         value={activeTool}
         onValueChange={(value) => setActiveTool(value as SessionTool)}

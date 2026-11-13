@@ -26,6 +26,7 @@ import { parse, serialize } from "cookie";
 import { randomBytes } from "node:crypto";
 import type { Request, Response } from "express";
 import { parseListing } from "./listings";
+import { VoiceService } from "./voice";
 import {
   ROOM,
   hash,
@@ -683,11 +684,13 @@ export class Chat implements OnModuleInit {
 @Controller("api")
 export class Api {
   private listingLimiter = new RateLimiter();
+  private voiceLimiter = new RateLimiter();
   constructor(
     @Inject(Auth) private auth: Auth,
     @Inject(Chat) private chat: Chat,
     @Inject(Database) private db: Database,
     @Inject(Realtime) private rt: Realtime,
+    @Inject(VoiceService) private voice: VoiceService,
   ) {}
   @Get("health") async health() {
     await this.db.$queryRaw`SELECT 1`;
@@ -877,6 +880,17 @@ export class Api {
     this.rt.emit("proposals:changed", {}, `user:${session.id}`);
     return { ok: true };
   }
+  @Post("rooms/:id/voice/token") async voiceToken(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+    @Param("id") id: string,
+  ) {
+    const session = await this.auth.roomAccess(req.headers.cookie, id);
+    if (!this.voiceLimiter.allow(String(session.id), 12, 60000))
+      return fail("RATE_LIMIT", 429);
+    res.setHeader("Cache-Control", "no-store");
+    return this.voice.token(id, this.auth.view(session), session.expiresAt);
+  }
   @Get("rooms/:id/messages") async messages(
     @Req() req: Request,
     @Param("id") id: string,
@@ -904,5 +918,8 @@ export class Api {
   }
 }
 
-@Module({ controllers: [Api], providers: [Database, Auth, Realtime, Chat] })
+@Module({
+  controllers: [Api],
+  providers: [Database, Auth, Realtime, Chat, VoiceService],
+})
 export class AppModule {}

@@ -10,7 +10,9 @@
     "record": "node record.mjs",
     "test:flow": "node session-flow-test.mjs",
     "test:transport": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test chat-transport.test.mjs",
-    "test:refactor": "node refactor-ui-test.mjs"
+    "test:refactor": "node refactor-ui-test.mjs",
+    "test:voice": "node voice-media-test.mjs",
+    "test:voice-ui": "node voice-ui-test.mjs"
   },
   "dependencies": {
     "qrcode": "^1.5.4"
