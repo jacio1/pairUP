@@ -9,7 +9,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate deploy",
     "test": "tsx --test test/*.test.ts",
-    "test:integration": "tsx --test test/integration.ts",
+    "test:integration": "tsx --test --test-concurrency=1 test/integration.ts test/listings.integration.ts",
     "test:load": "tsx test/load.ts"
   },
   "dependencies": {
@@ -22,6 +22,7 @@
     "cookie": "^1.0.2",
     "dotenv": "^17.2.0",
     "express": "^5.3.0",
+    "livekit-server-sdk": "^2.19.3",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
     "socket.io": "^4.8.1"

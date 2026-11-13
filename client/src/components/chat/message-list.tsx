@@ -1,0 +1,93 @@
+"use client";
+import { Button } from "@/components/ui/button";
+import { GraduationCap, RotateCcw, Sparkles } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
+import { MessageItem } from "./message-item";
+import type { ChatActions } from "./use-chat-actions";
+export function MessageList({
+  chat,
+}: {
+  chat: Pick<
+    ChatActions,
+    | "session"
+    | "messages"
+    | "busy"
+    | "ai"
+    | "presenter"
+    | "retryAi"
+    | "mode"
+    | "listing"
+  >;
+}) {
+  const t = useTranslations("Demo");
+  const errors = useTranslations("Errors");
+  const { session, messages, busy, ai, presenter, retryAi, mode, listing } =
+    chat;
+  const end = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length, busy]);
+  return (
+    <div
+      className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-6 sm:px-7"
+      role="log"
+      aria-label={t("messages")}
+      aria-live="polite"
+    >
+      <div className="mx-auto max-w-3xl space-y-4">
+        <div className="mx-auto mb-8 max-w-sm rounded-2xl border border-border/60 bg-card/80 px-5 py-4 text-center">
+          <span className="mb-2 inline-flex size-8 items-center justify-center rounded-full bg-primary/8 text-primary">
+            <GraduationCap className="size-4" />
+          </span>
+          <h2 className="text-xs font-semibold">
+            {listing?.title || "PairUp"}
+          </h2>
+          <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+            {t("roomWelcomeText")}
+          </p>
+        </div>
+        {messages.map((message) => (
+          <MessageItem
+            key={message.id}
+            message={message}
+            parent={messages.find(
+              (item) => item.id === message.targetMessageId,
+            )}
+            mine={message.sessionId === session?.id}
+            presenter={presenter}
+            mode={mode}
+          />
+        ))}
+        {busy && (
+          <p
+            className="flex items-center gap-2 text-xs text-muted-foreground"
+            role="status"
+          >
+            <Sparkles className="size-3.5 animate-pulse" />
+            {t("thinking")}…
+          </p>
+        )}
+        {ai?.status === "failed" && (
+          <div
+            className="rounded-xl border border-destructive/20 bg-destructive/5 p-3 text-xs text-destructive"
+            role="alert"
+          >
+            {errors(
+              ai.error === "AI_INTERRUPTED"
+                ? "AI_INTERRUPTED"
+                : "AI_UNAVAILABLE",
+            )}
+            {presenter && (
+              <Button variant="ghost" size="sm" onClick={retryAi}>
+                <RotateCcw className="size-3" />
+                {t("tryAgain")}
+              </Button>
+            )}
+          </div>
+        )}
+        <div ref={end} />
+      </div>
+    </div>
+  );
+}

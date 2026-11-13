@@ -1,4 +1,4 @@
-import { Notifications } from "@/components/product-pages";
+import { ProposalPage } from "@/components/listings/proposal-page";
 export default function Page() {
-  return <Notifications />;
+  return <ProposalPage mode="notifications" />;
 }

@@ -1,8 +1,20 @@
-import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import { configureStore,createSlice,PayloadAction } from "@reduxjs/toolkit";
+import { createApi,fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { CreateListingInput,Listing } from "./local-data";
 
+export type Proposal = {
+  id: string;
+  listingId: string;
+  senderId: number;
+  senderName: string;
+  status: "pending" | "accepted" | "declined";
+  incoming: boolean;
+  createdAt: string;
+  listing: Listing;
+};
 export type Session = { id: number; name: string; role: "guest" | "presenter" };
 export type Message = {
+  roomId?: string;
   generation?: number;
   id: string;
   seq: number;
@@ -14,6 +26,7 @@ export type Message = {
   createdAt: string;
 };
 export type AiStatus = {
+  roomId?: string;
   generation?: number;
   id: string;
   status: string;
@@ -28,7 +41,38 @@ export type Snapshot = {
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ baseUrl: "/api", credentials: "include" }),
+  tagTypes: ["Listings", "Proposals"],
   endpoints: (builder) => ({
+    proposals: builder.query<Proposal[], void>({
+      query: () => "/proposals",
+      providesTags: ["Proposals"],
+    }),
+    propose: builder.mutation<unknown, string>({
+      query: (id) => ({
+        url: `/listings/${encodeURIComponent(id)}/proposals`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Proposals"],
+    }),
+    respond: builder.mutation<unknown, { id: string; accept: boolean }>({
+      query: ({ id, accept }) => ({
+        url: `/proposals/${encodeURIComponent(id)}/respond`,
+        method: "POST",
+        body: { accept },
+      }),
+      invalidatesTags: ["Proposals"],
+    }),
+    logout: builder.mutation<unknown, void>({
+      query: () => ({ url: "/auth/logout", method: "POST" }),
+    }),
+    listings: builder.query<Listing[], number | void>({
+      query: (sessionId) => (sessionId ? "/listings?mine=true" : "/listings"),
+      providesTags: ["Listings"],
+    }),
+    createListing: builder.mutation<Listing, CreateListingInput>({
+      query: (body) => ({ url: "/listings", method: "POST", body }),
+      invalidatesTags: ["Listings"],
+    }),
     me: builder.query<Session | null, void>({ query: () => "/me" }),
     login: builder.mutation<Session, { password?: string }>({
       query: (data) => ({
@@ -37,32 +81,41 @@ export const api = createApi({
         body: data,
       }),
     }),
-    snapshot: builder.query<Snapshot, { after: number; syncId: string }>({
-      query: ({ after }) => `/rooms/demo/messages?after=${after}`,
+    snapshot: builder.query<
+      Snapshot,
+      { after: number; syncId: string; roomId: string }
+    >({
+      query: ({ after, roomId }) =>
+        `/rooms/${encodeURIComponent(roomId)}/messages?after=${after}`,
       keepUnusedDataFor: 0,
     }),
     ask: builder.mutation<
       NonNullable<AiStatus>,
       {
+        roomId: string;
         clientRequestId: string;
         prompt: string;
         locale: string;
         targetMessageId?: string;
       }
     >({
-      query: (body) => ({
-        url: "/rooms/demo/ai/requests",
+      query: ({ roomId, ...body }) => ({
+        url: `/rooms/${encodeURIComponent(roomId)}/ai/requests`,
         method: "POST",
         body,
       }),
     }),
-    reset: builder.mutation<{ ok: boolean }, void>({
-      query: () => ({ url: "/rooms/demo/reset", method: "POST" }),
+    reset: builder.mutation<{ ok: boolean }, string>({
+      query: (roomId) => ({
+        url: `/rooms/${encodeURIComponent(roomId)}/reset`,
+        method: "POST",
+      }),
     }),
   }),
 });
 const initialState: {
   session: Session | null;
+  roomId: string | null;
   messages: Message[];
   generation: number;
   connected: boolean;
@@ -73,6 +126,7 @@ const initialState: {
   target: Message | null;
 } = {
   session: null,
+  roomId: null,
   messages: [],
   generation: -1,
   connected: false,
@@ -89,12 +143,23 @@ const slice = createSlice({
     session(state, action: PayloadAction<Session | null>) {
       state.session = action.payload;
     },
+    room(state, action: PayloadAction<string | null | undefined>) {
+      state.roomId = action.payload || null;
+      state.messages = [];
+      state.generation = -1;
+      state.ai = null;
+      state.target = null;
+      state.draft = "";
+      state.aiDraft = "";
+      state.aiMode = false;
+    },
     connected(state, action: PayloadAction<boolean>) {
       state.connected = action.payload;
     },
     merge(state, action: PayloadAction<Message[]>) {
       const byId = new Map(state.messages.map((m) => [m.id, m]));
       for (const m of action.payload) {
+        if (m.roomId && m.roomId !== state.roomId) continue;
         if (m.generation !== undefined && m.generation !== state.generation)
           continue;
         byId.set(m.id, m);
@@ -112,6 +177,7 @@ const slice = createSlice({
     },
     ai(state, action: PayloadAction<AiStatus>) {
       const incoming = action.payload;
+      if (incoming?.roomId && incoming.roomId !== state.roomId) return;
       if (
         incoming?.generation !== undefined &&
         incoming.generation !== state.generation
@@ -154,8 +220,14 @@ export type Store = ReturnType<typeof createStore>;
 export type RootState = ReturnType<Store["getState"]>;
 export type Dispatch = Store["dispatch"];
 export const {
+  useProposalsQuery,
+  useProposeMutation,
+  useRespondMutation,
+  useLogoutMutation,
   useMeQuery,
   useLoginMutation,
   useAskMutation,
   useResetMutation,
+  useListingsQuery,
+  useCreateListingMutation,
 } = api;
