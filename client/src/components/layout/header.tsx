@@ -1,5 +1,4 @@
 "use client";
-import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/hooks";
 import { useProposalsQuery } from "@/lib/store";
@@ -13,7 +12,6 @@ import {
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { AppearanceMenu } from "./appearance-menu";
 import { UserMenu } from "./user-menu";
 export function Header() {
   const t = useTranslations("Demo");
@@ -30,14 +28,16 @@ export function Header() {
   const active = (href: string) =>
     href === "/" ? path === "/" : path.startsWith(href);
   return (
-    <header className="sticky top-0 z-30 hidden min-[761px]:block border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-17 max-w-7xl items-center gap-3 px-4 sm:px-6">
+    <header className="sticky top-0 z-30 hidden min-[761px]:block border-b border-border/80 bg-card/95 backdrop-blur-xl">
+      <div className="mx-auto flex h-20 max-w-[1280px] items-center gap-3 px-5 sm:px-8">
         <Link
           href="/"
-          className="mr-auto flex items-center gap-2 text-2xl font-bold tracking-tight"
+          className="mr-auto flex items-center gap-2.5 text-2xl font-extrabold tracking-[-0.06em]"
         >
-          <InfinityIcon className="size-8 text-primary" />
-          Pair<span className="-ml-2 text-primary">Up</span>
+          <span className="flex size-10 items-center justify-center rounded-[14px] bg-primary text-primary-foreground">
+            <InfinityIcon className="size-7" />
+          </span>
+          <span>PairUp</span>
         </Link>
         <nav
           className="hidden items-center gap-1 min-[761px]:flex"
@@ -51,7 +51,7 @@ export function Header() {
             {t("discover")}
           </Button>
           <Button
-            variant="ghost"
+            variant={active("/sessions") ? "secondary" : "ghost"}
             nativeButton={false}
             render={<Link href="/sessions" />}
           >
@@ -87,10 +87,6 @@ export function Header() {
             {p("create")}
           </Button>
         </nav>
-        <div className="hidden xl:block">
-          <LanguageSwitcher />
-        </div>
-        <AppearanceMenu />
         <UserMenu />
       </div>
     </header>

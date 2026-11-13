@@ -22,6 +22,7 @@ test("voice endpoint checks room access before issuing any token", async () => {
     {} as never,
     {} as never,
     voice as never,
+    {} as never,
   );
   await assert.rejects(
     () => api.voiceToken({ headers: {} } as never, {} as never, "private-room"),

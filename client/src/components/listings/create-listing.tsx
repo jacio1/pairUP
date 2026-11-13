@@ -8,21 +8,15 @@ import { ListingPreview } from "./listing-preview";
 import { PartnerSection } from "./partner-section";
 import { SessionDetailsSection } from "./session-details-section";
 import { useListingForm } from "./use-listing-form";
+import { PageHeading } from "@/components/layout/page-heading";
 export function CreateListing() {
   const t = useTranslations("Product");
   const errorsText = useTranslations("Errors");
   const form = useListingForm();
   const { submit, submitting, serverError } = form;
   return (
-    <main className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 md:px-8 lg:py-10">
-      <div className="mb-8 max-w-2xl">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          {t("create")}
-        </h1>
-        <p className="mt-3 text-sm leading-6 text-muted-foreground">
-          {t("createText")}
-        </p>
-      </div>
+    <main className="page-shell">
+      <PageHeading title={t("create")} description={t("createText")} />
       <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         <form onSubmit={submit} noValidate className="min-w-0 space-y-5">
           <fieldset

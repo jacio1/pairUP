@@ -27,6 +27,12 @@ import { randomBytes } from "node:crypto";
 import type { Request, Response } from "express";
 import { parseListing } from "./listings";
 import { VoiceService } from "./voice";
+import { StudyTools } from "./study-tools";
+import { StudyToolsController } from "./study-tools.controller";
+import { Profiles, profileAuthor } from "./profiles";
+import { ProfilesController } from "./profiles.controller";
+import { Files, attachmentFields } from "./files";
+import { FilesController, FileRoomGuard } from "./files.controller";
 import {
   ROOM,
   hash,
@@ -76,10 +82,16 @@ export class Database
       create: { id: "demo-listing", roomId: "listing-english-practice" },
       update: { roomId: "listing-english-practice" },
     });
+    const alex = await this.publicProfile.upsert({
+      where: { seedKey: "english-author" },
+      create: { seedKey: "english-author", name: "Alex" },
+      update: {},
+    });
     await this.listing.updateMany({
       where: { id: "demo-listing" },
       data: {
         authorName: "Alex",
+        authorProfileId: alex.id,
         title: "English",
         subject: "english",
         level: "intermediate",
@@ -347,6 +359,7 @@ export class Chat implements OnModuleInit {
       await this.lock(tx);
       const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
       const messages = await tx.message.findMany({
+        include: { attachment: { select: attachmentFields } },
         where: { roomId: roomId, seq: { gt: after } },
         orderBy: { seq: "asc" },
         take: 500,
@@ -691,6 +704,7 @@ export class Api {
     @Inject(Database) private db: Database,
     @Inject(Realtime) private rt: Realtime,
     @Inject(VoiceService) private voice: VoiceService,
+    @Inject(Profiles) private profiles: Profiles,
   ) {}
   @Get("health") async health() {
     await this.db.$queryRaw`SELECT 1`;
@@ -720,6 +734,7 @@ export class Api {
     const owner =
       mine === "true" ? await this.auth.require(req.headers.cookie) : null;
     return this.db.listing.findMany({
+      include: { authorProfile: profileAuthor },
       where: {
         ...(owner ? { ownerSessionId: owner.id } : {}),
       },
@@ -744,11 +759,13 @@ export class Api {
     if (!this.listingLimiter.allow(`listing:${session.id}`, 10, 3600000))
       return fail("RATE_LIMIT", 429);
     let created;
+    const profile = await this.profiles.ensure(session);
     try {
       created = await this.db.listing.create({
         data: {
           ...listing,
-          authorName: this.auth.view(session).name,
+          authorName: profile.name,
+          authorProfile: { connect: { id: profile.id } },
           owner: { connect: { id: session.id } },
           room: { create: { id: `listing-${listing.id}` } },
         },
@@ -919,7 +936,25 @@ export class Api {
 }
 
 @Module({
-  controllers: [Api],
-  providers: [Database, Auth, Realtime, Chat, VoiceService],
+  controllers: [Api, StudyToolsController, ProfilesController, FilesController],
+  providers: [
+    Database,
+    Auth,
+    Realtime,
+    Chat,
+    VoiceService,
+    StudyTools,
+    Profiles,
+    Files,
+    FileRoomGuard,
+    { provide: "FILES_DATABASE", useExisting: Database },
+    { provide: "FILES_ACCESS", useExisting: Auth },
+    { provide: "FILES_REALTIME", useExisting: Realtime },
+    { provide: "PROFILE_DATABASE", useExisting: Database },
+    { provide: "PROFILE_ACCESS", useExisting: Auth },
+    { provide: "STUDY_DATABASE", useExisting: Database },
+    { provide: "STUDY_ACCESS", useExisting: Auth },
+    { provide: "STUDY_REALTIME", useExisting: Realtime },
+  ],
 })
 export class AppModule {}

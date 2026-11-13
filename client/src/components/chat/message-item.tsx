@@ -2,8 +2,9 @@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { type Message } from "@/lib/store";
-import { Sparkles } from "lucide-react";
+import { NeuronMascot } from "@/components/neuron-mascot";
 import { useFormatter, useTranslations } from "next-intl";
+import { AttachmentCard } from "@/components/files/attachment-card";
 export function MessageItem({
   message,
   parent,
@@ -31,7 +32,7 @@ export function MessageItem({
             className={`text-[10px] ${neuron ? "bg-primary/10 text-primary" : ""}`}
           >
             {neuron ? (
-              <Sparkles className="size-3.5" />
+              <NeuronMascot icon decorative className="size-7" />
             ) : (
               message.author.slice(0, 1)
             )}
@@ -40,7 +41,7 @@ export function MessageItem({
       )}
       <div className="min-w-0 max-w-[85%] sm:max-w-[75%]">
         <div
-          className={`rounded-2xl px-3.5 py-2.5 shadow-xs ${mine ? "rounded-br-md bg-primary text-primary-foreground" : "rounded-bl-md border border-border/60 bg-card"}`}
+          className={`rounded-2xl px-4 py-3 ${mine ? "rounded-br-md bg-[var(--message-sent)] text-[var(--message-sent-foreground)]" : "rounded-bl-md border border-border bg-card"}`}
         >
           {!mine && (
             <p className="mb-1 text-[11px] font-semibold text-primary">
@@ -49,24 +50,28 @@ export function MessageItem({
           )}
           {message.kind === "ai-request" && (
             <span
-              className={`mb-1.5 flex items-center gap-1 text-[10px] ${mine ? "text-primary-foreground/75" : "text-muted-foreground"}`}
+              className={`mb-2 flex items-center gap-1.5 text-xs font-medium ${mine ? "text-[var(--message-sent-foreground)]" : "text-muted-foreground"}`}
             >
-              <Sparkles className="size-3" />
+              <NeuronMascot icon decorative className="size-5" />
               {t("askedNeuron")}
             </span>
           )}
           {parent && (
             <blockquote
-              className={`mb-2 line-clamp-3 border-l-2 py-1 pl-2 text-xs ${mine ? "border-primary-foreground/50 text-primary-foreground/80" : "border-primary/30 text-muted-foreground"}`}
+              className={`mb-3 line-clamp-3 rounded-r-md border-l-2 px-3 py-2 text-[13px] leading-6 ${mine ? "border-[var(--message-sent-foreground)] bg-white/10 text-[var(--message-sent-foreground)] dark:bg-white/5" : "border-primary/50 bg-muted/60 text-foreground"}`}
             >
               {parent.text.slice(0, 160)}
             </blockquote>
           )}
-          <p className="text-sm leading-6 whitespace-pre-wrap wrap-anywhere">
-            {message.text}
-          </p>
+          {message.attachment ? (
+            <AttachmentCard file={message.attachment} />
+          ) : (
+            <p className="text-[15px] font-medium leading-7 whitespace-pre-wrap wrap-anywhere">
+              {message.text}
+            </p>
+          )}
           <time
-            className={`mt-1 block text-right text-[10px] ${mine ? "text-primary-foreground/65" : "text-muted-foreground"}`}
+            className={`mt-2 block text-right text-[11px] tabular-nums ${mine ? "text-[var(--message-sent-foreground)]" : "text-muted-foreground"}`}
             dateTime={message.createdAt}
           >
             {format.dateTime(new Date(message.createdAt), {
@@ -79,11 +84,11 @@ export function MessageItem({
           <Button
             variant="ghost"
             size="xs"
-            className={`mt-1 h-6 gap-1 text-[10px] text-muted-foreground ${mine ? "ml-auto flex" : ""}`}
+            className={`mt-1 h-8 gap-1 text-xs text-muted-foreground ${mine ? "ml-auto flex" : ""}`}
             onClick={() => mode(message)}
             aria-label={t("askAboutMessage")}
           >
-            <Sparkles className="size-3" />
+            <NeuronMascot icon decorative className="size-5" />
             {t("askNeuron")}
           </Button>
         )}

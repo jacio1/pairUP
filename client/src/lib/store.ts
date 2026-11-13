@@ -1,6 +1,7 @@
 import { configureStore,createSlice,PayloadAction } from "@reduxjs/toolkit";
 import { createApi,fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { CreateListingInput,Listing } from "./local-data";
+import type { Attachment } from "./attachments";
 
 export type Proposal = {
   id: string;
@@ -14,6 +15,7 @@ export type Proposal = {
 };
 export type Session = { id: number; name: string; role: "guest" | "presenter" };
 export type Message = {
+  attachment?: Attachment | null;
   roomId?: string;
   generation?: number;
   id: string;

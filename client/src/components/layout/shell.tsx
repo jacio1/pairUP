@@ -6,7 +6,10 @@ import { MobileNav } from "./mobile-nav";
 export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const protectedRoute =
-    path !== "/" && !path.startsWith("/listings/") && path !== "/settings";
+    path !== "/" &&
+    !path.startsWith("/listings/") &&
+    !path.startsWith("/users/") &&
+    path !== "/settings";
   const content = protectedRoute ? <AuthGate>{children}</AuthGate> : children;
   if (path.startsWith("/messages/"))
     return <div className="h-dvh w-full overflow-hidden">{content}</div>;

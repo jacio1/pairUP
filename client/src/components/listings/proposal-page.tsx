@@ -8,6 +8,7 @@ import { BookOpen } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";
 import { useState } from "react";
+import { PageHeading } from "@/components/layout/page-heading";
 export function ProposalPage({
   mode,
 }: {
@@ -47,10 +48,8 @@ export function ProposalPage({
     }
   }
   return (
-    <main className="mx-auto w-full max-w-4xl space-y-6 px-5 py-10">
-      <h1 className="text-3xl font-semibold">
-        {mode === "messages" ? d("messages") : p(mode)}
-      </h1>
+    <main className="page-shell space-y-6">
+      <PageHeading title={mode === "messages" ? d("messages") : p(mode)} />
       {isLoading ? (
         <p>{a("loading")}</p>
       ) : isError ? (
@@ -58,7 +57,10 @@ export function ProposalPage({
       ) : rows.length ? (
         <div className="space-y-3">
           {rows.map((row) => (
-            <Card key={row.id} className="gap-3 p-5">
+            <Card
+              key={row.id}
+              className="max-w-4xl gap-4 rounded-2xl p-5 sm:p-6"
+            >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Link
                   href={listingHref(row.listing)}

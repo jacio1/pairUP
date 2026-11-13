@@ -2,7 +2,8 @@
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/hooks";
 import { actions } from "@/lib/store";
-import { Sparkles, X } from "lucide-react";
+import { X } from "lucide-react";
+import { NeuronMascot } from "@/components/neuron-mascot";
 import { useTranslations } from "next-intl";
 import type { ChatActions } from "./use-chat-actions";
 export function NeuronContext({ chat }: { chat: Pick<ChatActions, "target"> }) {
@@ -11,7 +12,7 @@ export function NeuronContext({ chat }: { chat: Pick<ChatActions, "target"> }) {
   const { target } = chat;
   return (
     <div className="mb-2 flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2">
-      <Sparkles className="size-4 shrink-0 text-primary" />
+      <NeuronMascot icon decorative className="size-7" />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-medium">
           {t(target ? "selectedMessage" : "recentConversation")}

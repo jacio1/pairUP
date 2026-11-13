@@ -13,9 +13,9 @@ export function EmptyState({
   children?: React.ReactNode;
 }) {
   return (
-    <Card className="block gap-0 ring-0 shadow-none empty-state bg-card [border:1px_solid_var(--border)] rounded-[17px] text-center p-[55px_25px] [&_h2]:text-[20px] [&_h2]:font-semibold [&_h2]:leading-[1.5] [&_p]:text-[13px] [&_p]:leading-[1.9] [&_p]:text-muted-foreground [&_p]:max-w-[490px] [&_p]:m-[12px_auto_0] [&_.secondary-button]:mt-5 max-[760px]:p-[40px_20px] max-[760px]:[&_h2]:text-[18px]">
-      <span className="empty-icon inline-flex items-center justify-center bg-muted text-primary w-[65px] h-[65px] rounded-[20px] mb-[22px]">
-        <Icon size={28} />
+    <Card className="block rounded-[24px] border border-dashed bg-card/70 px-6 py-14 text-center ring-0 [&_h2]:text-xl [&_h2]:font-bold [&_p]:mx-auto [&_p]:mt-3 [&_p]:max-w-md [&_p]:text-sm [&_p]:leading-7 [&_p]:text-muted-foreground">
+      <span className="mb-5 inline-flex size-14 items-center justify-center rounded-2xl bg-secondary text-primary">
+        <Icon size={25} />
       </span>
       <h2>{title}</h2>
       <p>{text}</p>

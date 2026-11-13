@@ -11,6 +11,8 @@ import {
   type Message,
 } from "@/lib/store";
 import { io } from "socket.io-client";
+import { studyApi } from "@/lib/study-tools-api";
+import { filesApi } from "@/lib/files-api";
 export function useChatConnection() {
   const dispatch = useAppDispatch();
   const pathname = usePathname();
@@ -86,11 +88,42 @@ export function useChatConnection() {
       dispatch(api.util.invalidateTags(["Proposals"])),
     );
     socket.on("room:ready", () => {
+      if (roomId)
+        dispatch(
+          filesApi.util.invalidateTags([{ type: "RoomFiles", id: roomId }]),
+        );
+      if (roomId)
+        dispatch(
+          studyApi.util.invalidateTags([
+            { type: "StudyTools", id: roomId },
+            "StudyNote",
+          ]),
+        );
       void synchronize();
     });
+    socket.on(
+      "tools:changed",
+      (event: { roomId?: string; noteId?: string }) => {
+        if (event?.roomId !== roomId) return;
+        dispatch(
+          studyApi.util.invalidateTags([
+            { type: "StudyTools", id: roomId! },
+            ...(event.noteId
+              ? [{ type: "StudyNote" as const, id: event.noteId }]
+              : []),
+          ]),
+        );
+      },
+    );
     socket.on("message:created", (m: Message) => {
       if (synchronizing) buffer.push(m);
       else dispatch(actions.merge([m]));
+    });
+    socket.on("files:changed", (event: { roomId?: string }) => {
+      if (event?.roomId === roomId)
+        dispatch(
+          filesApi.util.invalidateTags([{ type: "RoomFiles", id: roomId! }]),
+        );
     });
     socket.on("ai:status", (status: AiStatus) => {
       if (synchronizing) bufferedAi = status;

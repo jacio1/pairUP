@@ -12,7 +12,10 @@
     "test:transport": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test chat-transport.test.mjs",
     "test:refactor": "node refactor-ui-test.mjs",
     "test:voice": "node voice-media-test.mjs",
-    "test:voice-ui": "node voice-ui-test.mjs"
+    "test:voice-ui": "node voice-ui-test.mjs",
+    "test:study-tools": "node study-tools-test.mjs",
+    "test:profiles": "node profiles-test.mjs",
+    "test:files": "node files-test.mjs"
   },
   "dependencies": {
     "qrcode": "^1.5.4"

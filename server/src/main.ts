@@ -24,7 +24,7 @@ async function main() {
     }
   }
   const app = await NestFactory.create(AppModule, { bodyParser: false });
-  app.use(json({ limit: "16kb" }));
+  app.use(json({ limit: "384kb" }));
   const origins = (process.env.PUBLIC_ORIGIN || "http://localhost:3000").split(
     ",",
   );

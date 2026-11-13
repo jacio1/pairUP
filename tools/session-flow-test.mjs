@@ -179,7 +179,7 @@ try {
   assert.equal(await page.getByRole("banner").isVisible(), false);
   const englishCard = page.locator('[role="article"]').first();
   assert.equal(await englishCard.locator('a').first().innerText(), "English");
-  assert.ok((await englishCard.boundingBox()).height < 210);
+  assert.equal(Math.round((await englishCard.boundingBox()).height), 340);
   await englishCard.getByRole("button", { name: "Open chat" }).click();
   await page.getByRole("heading", { name: "English", exact: true, level: 1 }).waitFor();
   await page.getByText("Connected", { exact: true }).waitFor();
@@ -206,6 +206,7 @@ try {
   await db.sessionProposal.deleteMany({ where: { listingId: id } });
   await db.listing.deleteMany({ where: { id } });
   await db.room.deleteMany({ where: { id: roomId } });
+  await db.publicProfile.deleteMany({ where: { sessionId: { in: sessionIds } } });
   await db.session.deleteMany({ where: { id: { in: sessionIds } } });
   await db.$disconnect();
 }

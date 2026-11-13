@@ -1,5 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
+import { NeuronMascot } from "@/components/neuron-mascot";
 import {
   Dialog,
   DialogContent,
@@ -58,7 +59,8 @@ export function AuthDialog({
         >
           <X className="size-4" />
         </Button>
-        <DialogHeader>
+        <DialogHeader className="border-b border-border pb-5">
+          <NeuronMascot className="mb-2 size-20" />
           <DialogTitle>
             {verification
               ? t("verifyTitle")

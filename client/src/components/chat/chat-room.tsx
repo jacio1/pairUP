@@ -12,7 +12,9 @@ import { ToolNav } from "./tool-nav";
 import { ToolSidebar } from "./tool-sidebar";
 import { useChatActions } from "./use-chat-actions";
 import { VoicePanel } from "@/components/voice/voice-panel";
-export function ChatRoom({ roomId }: { roomId: string }) {
+import { RoomUploadProvider } from "@/components/files/upload-provider";
+import { FileDropZone } from "@/components/files/file-drop-zone";
+function ChatWorkspace({ roomId }: { roomId: string }) {
   const chat = useChatActions(roomId);
   const { session, listing } = chat;
   const room = useTranslations("Room");
@@ -31,24 +33,22 @@ export function ChatRoom({ roomId }: { roomId: string }) {
           value={activeTool}
           className="flex min-h-0 flex-1 overflow-hidden"
         >
-          <section
-            className={`min-h-0 min-w-0 flex-1 flex-col bg-muted/25 ${activeTool === "chat" ? "flex" : "hidden lg:flex"}`}
-            aria-label={room("chat")}
+          <FileDropZone
+            className={`workspace-surface min-h-0 min-w-0 flex-1 flex-col ${activeTool === "chat" ? "flex" : "hidden lg:flex"}`}
+            label={room("chat")}
           >
             {!session ? (
               <GuestRoom title={listing?.title || "PairUp"} />
             ) : (
               <>
                 <MessageList chat={chat} />
-                <ChatComposer
-                  chat={chat}
-                  onFiles={() => setActiveTool("files")}
-                />
+                <ChatComposer chat={chat} />
               </>
             )}
-          </section>
+          </FileDropZone>
           {activeTool !== "chat" && (
             <ToolSidebar
+              roomId={roomId}
               activeTool={activeTool}
               onClose={() => setActiveTool("chat")}
             />
@@ -57,5 +57,12 @@ export function ChatRoom({ roomId }: { roomId: string }) {
       </Tabs>
       <ClearChatDialog chat={chat} />
     </main>
+  );
+}
+export function ChatRoom({ roomId }: { roomId: string }) {
+  return (
+    <RoomUploadProvider key={roomId} roomId={roomId}>
+      <ChatWorkspace roomId={roomId} />
+    </RoomUploadProvider>
   );
 }

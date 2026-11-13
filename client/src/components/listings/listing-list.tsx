@@ -32,9 +32,12 @@ export function ListingList({
     );
   if (!data?.length) return empty || null;
   return (
-    <div className="grid gap-3">
+    <div className="grid items-start gap-4 md:grid-cols-2">
       {mine && data.some((l) => l.id === publishedId) && (
-        <p role="status" className="rounded-xl border bg-primary/5 p-4 text-sm">
+        <p
+          role="status"
+          className="rounded-xl border bg-primary/5 p-4 text-sm md:col-span-2"
+        >
           {t("listingPublished")}
         </p>
       )}

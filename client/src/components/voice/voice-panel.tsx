@@ -15,7 +15,7 @@ export function VoicePanel({ roomId }: { roomId: string }) {
   return (
     <section
       aria-label={t("title")}
-      className="shrink-0 border-b bg-background px-3 py-2 sm:px-6"
+      className="shrink-0 border-b bg-card px-3 py-2.5 sm:px-6"
     >
       <div className="flex flex-wrap items-center gap-2">
         <Headphones className="size-4 text-primary" />

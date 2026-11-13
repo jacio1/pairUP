@@ -23,6 +23,24 @@ model Session {
   listings  Listing[]
   sentProposals SessionProposal[] @relation("ProposalSender")
   receivedProposals SessionProposal[] @relation("ProposalOwner")
+  profile PublicProfile?
+}
+
+model PublicProfile {
+  id           Int      @id @default(autoincrement())
+  sessionId    Int?     @unique
+  session      Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  seedKey      String?  @unique
+  name         String
+  bio          String   @default("")
+  interests    String   @default("")
+  goal         String   @default("")
+  availability String   @default("")
+  avatar       String   @default("violet")
+  version      Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  listings     Listing[]
 }
 
 model Listing {
@@ -33,6 +51,8 @@ model Listing {
   ownerSessionId Int?
   owner          Session? @relation(fields: [ownerSessionId], references: [id], onDelete: SetNull)
   authorName     String   @default("")
+  authorProfileId Int?
+  authorProfile PublicProfile? @relation(fields: [authorProfileId], references: [id], onDelete: SetNull)
   title          String   @default("")
   subject        String   @default("")
   level          String   @default("")
@@ -46,6 +66,7 @@ model Listing {
 
   @@index([ownerSessionId, createdAt])
   @@index([createdAt])
+  @@index([authorProfileId, createdAt])
 }
 
 model Room {
@@ -54,6 +75,35 @@ model Room {
   listing    Listing?
   messages   Message[]
   jobs       AiJob[]
+  notes      StudyNote[]
+  tasks      StudyTask[]
+  attachments Attachment[]
+}
+
+model StudyNote {
+  id        String   @id
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  title     String   @default("")
+  state     Bytes
+  version   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId, createdAt])
+}
+
+model StudyTask {
+  id        String   @id
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  title     String
+  completed Boolean  @default(false)
+  version   Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([roomId, createdAt])
 }
 
 model SessionProposal {
@@ -84,7 +134,27 @@ model Message {
   targetMessageId String?
   createdAt       DateTime @default(now())
 
+  attachment Attachment?
+
   @@index([roomId, seq])
+}
+
+model Attachment {
+  id              String   @id @default(uuid())
+  roomId          String
+  room            Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  messageId       String?  @unique
+  message         Message? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  storageKey      String   @unique
+  clientRequestId String   @unique
+  name            String
+  size            Int
+  mime            String
+  kind            String
+  author          String
+  createdAt       DateTime @default(now())
+
+  @@index([roomId, createdAt])
 }
 
 model AiJob {
