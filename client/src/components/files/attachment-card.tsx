@@ -39,6 +39,7 @@ export function AttachmentCard({
       {file.kind === "video" && !failed && (
         <video
           controls
+          controlsList="nodownload"
           playsInline
           preload="metadata"
           src={fileUrl(file)}
@@ -52,23 +53,25 @@ export function AttachmentCard({
           {t(file.kind === "video" ? "videoUnavailable" : "previewUnavailable")}
         </p>
       )}
-      <div className="flex min-w-0 items-center gap-3 rounded-lg border border-current/15 p-3">
-        <FileText className="size-5 shrink-0 opacity-80" />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium" title={file.name}>
-            {file.name}
-          </p>
-          <p className="mt-0.5 text-xs">{fileSize(file.size, locale)}</p>
+      {file.kind === "file" && (
+        <div className="flex min-w-0 items-center gap-3 rounded-lg border border-current/15 p-3">
+          <FileText className="size-5 shrink-0 opacity-80" />
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-sm font-medium" title={file.name}>
+              {file.name}
+            </p>
+            <p className="mt-0.5 text-xs">{fileSize(file.size, locale)}</p>
+          </div>
+          <a
+            href={fileUrl(file, true)}
+            download
+            className="flex size-9 shrink-0 items-center justify-center rounded-lg outline-none hover:bg-current/10 focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label={t("download", { name: file.name })}
+          >
+            <Download className="size-4" />
+          </a>
         </div>
-        <a
-          href={fileUrl(file, true)}
-          download
-          className="flex size-9 shrink-0 items-center justify-center rounded-lg outline-none hover:bg-current/10 focus-visible:ring-2 focus-visible:ring-ring"
-          aria-label={t("download", { name: file.name })}
-        >
-          <Download className="size-4" />
-        </a>
-      </div>
+      )}
       {file.kind === "image" && (
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogContent
@@ -94,13 +97,6 @@ export function AttachmentCard({
               alt={file.name}
               className="max-h-[72dvh] w-full object-contain"
             />
-            <a
-              href={fileUrl(file, true)}
-              download
-              className="text-sm text-primary underline"
-            >
-              {t("download", { name: file.name })}
-            </a>
           </DialogContent>
         </Dialog>
       )}

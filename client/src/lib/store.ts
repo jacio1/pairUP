@@ -1,6 +1,6 @@
-import { configureStore,createSlice,PayloadAction } from "@reduxjs/toolkit";
-import { createApi,fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import type { CreateListingInput,Listing } from "./local-data";
+import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
+import type { CreateListingInput, Listing } from "./local-data";
 import type { Attachment } from "./attachments";
 
 export type Proposal = {
@@ -15,6 +15,7 @@ export type Proposal = {
 };
 export type Session = { id: number; name: string; role: "guest" | "presenter" };
 export type Message = {
+  authorProfile?: { id: number; name: string; avatar: string } | null;
   attachment?: Attachment | null;
   roomId?: string;
   generation?: number;
@@ -35,6 +36,10 @@ export type AiStatus = {
   error?: string | null;
 } | null;
 export type Snapshot = {
+  references: { id: string; text: string }[];
+  roomId: string;
+  mode: "latest" | "older" | "after";
+  hasOlder: boolean;
   messages: Message[];
   generation: number;
   hasMore: boolean;
@@ -85,10 +90,20 @@ export const api = createApi({
     }),
     snapshot: builder.query<
       Snapshot,
-      { after: number; syncId: string; roomId: string }
+      {
+        after?: number;
+        before?: number;
+        generation?: number;
+        syncId: string;
+        roomId: string;
+      }
     >({
-      query: ({ after, roomId }) =>
-        `/rooms/${encodeURIComponent(roomId)}/messages?after=${after}`,
+      query: ({ after, before, generation, roomId }) =>
+        `/rooms/${encodeURIComponent(roomId)}/messages?${new URLSearchParams(
+          Object.entries({ after, before, generation })
+            .filter(([, v]) => v !== undefined)
+            .map(([k, v]) => [k, String(v)]),
+        )}`,
       keepUnusedDataFor: 0,
     }),
     ask: builder.mutation<
@@ -119,6 +134,9 @@ const initialState: {
   session: Session | null;
   roomId: string | null;
   messages: Message[];
+  references: Record<string, { id: string; text: string }>;
+  historyReady: boolean;
+  hasOlder: boolean;
   generation: number;
   connected: boolean;
   ai: AiStatus;
@@ -130,6 +148,9 @@ const initialState: {
   session: null,
   roomId: null,
   messages: [],
+  references: {},
+  historyReady: false,
+  hasOlder: false,
   generation: -1,
   connected: false,
   ai: null,
@@ -148,12 +169,46 @@ const slice = createSlice({
     room(state, action: PayloadAction<string | null | undefined>) {
       state.roomId = action.payload || null;
       state.messages = [];
+      state.references = {};
+      state.historyReady = false;
+      state.hasOlder = false;
       state.generation = -1;
       state.ai = null;
       state.target = null;
       state.draft = "";
       state.aiDraft = "";
       state.aiMode = false;
+    },
+    references(
+      state,
+      action: PayloadAction<{
+        roomId: string;
+        generation: number;
+        items: { id: string; text: string }[];
+      }>,
+    ) {
+      if (
+        state.roomId !== action.payload.roomId ||
+        state.generation !== action.payload.generation
+      )
+        return;
+      for (const item of action.payload.items) state.references[item.id] = item;
+    },
+    history(
+      state,
+      action: PayloadAction<{
+        roomId: string;
+        generation: number;
+        hasOlder: boolean;
+      }>,
+    ) {
+      if (
+        state.roomId !== action.payload.roomId ||
+        state.generation !== action.payload.generation
+      )
+        return;
+      state.historyReady = true;
+      state.hasOlder = action.payload.hasOlder;
     },
     connected(state, action: PayloadAction<boolean>) {
       state.connected = action.payload;
@@ -172,6 +227,9 @@ const slice = createSlice({
       if (action.payload < state.generation) return;
       if (state.generation !== action.payload) {
         state.messages = [];
+        state.references = {};
+        state.historyReady = false;
+        state.hasOlder = false;
         state.target = null;
         state.ai = null;
         state.generation = action.payload;

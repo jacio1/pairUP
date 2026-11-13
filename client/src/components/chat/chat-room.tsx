@@ -30,6 +30,7 @@ function ChatWorkspace({ roomId }: { roomId: string }) {
       >
         <ToolNav />
         <TabsContent
+          keepMounted
           value={activeTool}
           className="flex min-h-0 flex-1 overflow-hidden"
         >

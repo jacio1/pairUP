@@ -1,3 +1,4 @@
+import { RoomActivities } from "./room-activities";
 import {
   Body,
   Controller,
@@ -21,6 +22,7 @@ export class StudyToolsController {
     @Inject("STUDY_ACCESS") private auth: Auth,
     @Inject("STUDY_REALTIME") private rt: Realtime,
     @Inject(StudyTools) private tools: StudyTools,
+    @Inject(RoomActivities) private activities: RoomActivities,
   ) {}
   private async access(req: Request, roomId: string, write = false) {
     const session = await this.auth.roomAccess(req.headers.cookie, roomId);
@@ -37,6 +39,42 @@ export class StudyToolsController {
     const result = await work();
     this.rt.emit("tools:changed", { noteId }, roomId);
     return result;
+  }
+  @Get("timer") async timer(
+    @Req() req: Request,
+    @Param("roomId") roomId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.access(req, roomId);
+    res.setHeader("Cache-Control", "no-store");
+    return this.activities.timer(roomId);
+  }
+  @Post("timer") updateTimer(
+    @Req() req: Request,
+    @Param("roomId") roomId: string,
+    @Body() body: Parameters<RoomActivities["updateTimer"]>[1],
+  ) {
+    return this.change(req, roomId, () =>
+      this.activities.updateTimer(roomId, body),
+    );
+  }
+  @Get("board") async board(
+    @Req() req: Request,
+    @Param("roomId") roomId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.access(req, roomId);
+    res.setHeader("Cache-Control", "no-store");
+    return this.activities.board(roomId);
+  }
+  @Post("board") updateBoard(
+    @Req() req: Request,
+    @Param("roomId") roomId: string,
+    @Body() body: Parameters<RoomActivities["updateBoard"]>[1],
+  ) {
+    return this.change(req, roomId, () =>
+      this.activities.updateBoard(roomId, body),
+    );
   }
   @Get() async snapshot(
     @Req() req: Request,

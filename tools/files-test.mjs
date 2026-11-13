@@ -140,6 +140,28 @@ try {
   const content = await b.request.get(`${prefix}/${photo.id}/content`);
   assert.deepEqual(await content.body(), image);
   assert.equal(content.headers()["content-type"], "image/png");
+  assert.match(content.headers()["cache-control"], /private/);
+  const cached = await b.request.get(`${prefix}/${photo.id}/content`, {
+    headers: { "If-None-Match": content.headers().etag },
+  });
+  assert.equal(cached.status(), 304);
+  assert.equal(
+    (
+      await anon.request.get(`${prefix}/${photo.id}/content`, {
+        headers: { "If-None-Match": content.headers().etag },
+      })
+    ).status(),
+    401,
+  );
+  assert.equal(
+    await pb
+      .getByRole("log")
+      .getByRole("link", {
+        name: ru.Files.download.replace("{name}", "Нейрон.png"),
+      })
+      .count(),
+    0,
+  );
   // A real WebM is produced locally, using a synthetic canvas rather than a camera.
   const video = Buffer.from(
     await pa.evaluate(async () => {
@@ -195,7 +217,16 @@ try {
   });
   assert.equal(range.status(), 206);
   assert.equal((await range.body()).length, 16);
+  const chatImage = await pb
+    .getByRole("log")
+    .locator("img")
+    .first()
+    .elementHandle();
   await pb.getByRole("tab", { name: ru.Room.files, exact: true }).click();
+  assert.ok(
+    await chatImage.evaluate((el) => el.isConnected),
+    "Chat media stays mounted when opening tools",
+  );
   const library = pb.getByRole("list", { name: ru.Files.sharedFiles });
   await library.getByText("Lesson notes.txt", { exact: true }).waitFor();
   const fromLibrary = pb.waitForEvent("download");
@@ -206,6 +237,7 @@ try {
     })
     .click();
   assert.equal((await fromLibrary).suggestedFilename(), "Lesson notes.txt");
+  await pb.getByRole("button", { name: new RegExp(ru.Files.gallery) }).click();
   await library
     .getByRole("button", {
       name: ru.Files.viewImage.replace("{name}", "Нейрон.png"),
@@ -214,6 +246,9 @@ try {
     .click();
   await pb.getByRole("dialog").waitFor();
   await pb.keyboard.press("Escape");
+  await pb
+    .getByRole("button", { name: new RegExp(ru.Files.documents) })
+    .click();
   // A drop into the actual chat creates the same durable attachment/message pair.
   await pa
     .getByRole("region", { name: en.Room.chat, exact: true })

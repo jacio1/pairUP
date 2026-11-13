@@ -37,6 +37,8 @@ test("both dictionaries expose exactly the same translated keys", () => {
     "SocialProfile",
     "Design",
     "Files",
+    "ChatExtras",
+    "Activities",
   ] as const)
     assert.deepEqual(Object.keys(en[key]).sort(), Object.keys(ru[key]).sort());
   for (const text of Object.values(ru.Demo)) assert.ok(text.trim());

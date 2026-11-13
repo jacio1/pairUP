@@ -41,6 +41,7 @@ model PublicProfile {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   listings     Listing[]
+  messages     Message[]
 }
 
 model Listing {
@@ -78,6 +79,29 @@ model Room {
   notes      StudyNote[]
   tasks      StudyTask[]
   attachments Attachment[]
+  timer RoomTimer?
+  board RoomBoard?
+}
+
+model RoomTimer {
+  roomId String @id
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  mode String @default("focus")
+  focusSeconds Int @default(1500)
+  breakSeconds Int @default(300)
+  longBreakSeconds Int @default(900)
+  remainingMs Int @default(1500000)
+  endsAt DateTime?
+  completed Int @default(0)
+  version Int @default(0)
+}
+
+model RoomBoard {
+  roomId String @id
+  room Room @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  generation Int @default(0)
+  version Int @default(0)
+  elements Json @default("[]")
 }
 
 model StudyNote {
@@ -122,6 +146,8 @@ model SessionProposal {
 }
 
 model Message {
+  authorProfileId Int?
+  authorProfile PublicProfile? @relation(fields: [authorProfileId], references: [id], onDelete: SetNull)
   seq             Int      @id @default(autoincrement())
   id              String   @unique @default(uuid())
   roomId          String
