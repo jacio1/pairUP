@@ -1,5 +1,7 @@
 # PairUp
 
+[English](README.md) · [Русский](README.ru.md)
+
 **Find a study partner. Stay focused. Learn together.**
 
 <img src="client/public/mascots/neuron.png" alt="Neuron, the PairUp mascot" width="160" align="right" />
