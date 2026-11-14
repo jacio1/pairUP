@@ -7,4 +7,6 @@ coverage/
 *.log
 artifacts/
 uploads/
+/output/
+/presentation.pptx
 
