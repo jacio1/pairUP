@@ -8,7 +8,6 @@ import { ProfileEditDialog } from "./profile-edit-dialog";
 import { ProfileMenu } from "./profile-menu";
 import { ProfileHeader } from "./profile-header";
 import { ProfileAbout } from "./profile-about";
-import { ProfileListings } from "./profile-listings";
 import { useProfileForm } from "./use-profile-form";
 export function Profile() {
   const form = useProfileForm();
@@ -59,13 +58,12 @@ export function Profile() {
           {p("profileSaved")}
         </p>
       )}
-      <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
+        <ProfileAbout profile={profile} />
         <aside className="min-w-0 space-y-5">
-          <ProfileAbout profile={profile} />
           <ProfileMenu />
           <SignOutButton />
         </aside>
-        <ProfileListings listings={profile.listings} />
       </div>
       <ProfileEditDialog form={form} />
     </main>
