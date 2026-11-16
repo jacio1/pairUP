@@ -28,7 +28,6 @@ export function useBoardActions(roomId: string) {
     inFlight.current.add(item.element.id);
     try {
       await mutate({ roomId, action: "add", ...item }).unwrap();
-      await refetch().unwrap();
       setPending((list) =>
         list.filter((p) => p.element.id !== item.element.id),
       );
@@ -47,7 +46,7 @@ export function useBoardActions(roomId: string) {
     void save(item);
   }
   async function command(action: "remove" | "clear", id?: string) {
-    if (!data || busy || !connected || pending.length) return;
+    if (!data || busy || !connected || pending.length) return false;
     setBusy(true);
     setError("");
     try {
@@ -58,10 +57,11 @@ export function useBoardActions(roomId: string) {
         generation: data.generation,
         version: data.version,
       }).unwrap();
-      await refetch().unwrap();
+      return true;
     } catch (e) {
       setError(studyError(e));
       void refetch();
+      return false;
     } finally {
       setBusy(false);
     }

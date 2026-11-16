@@ -1,5 +1,7 @@
 import { api } from "./store";
+import { subscribeBoardSnapshots } from "./board-events";
 export type BoardElement = {
+  strokeId?: string;
   id: string;
   kind: "pencil" | "line" | "square" | "circle" | "text";
   color: string;
@@ -44,7 +46,7 @@ const path = (roomId: string) => `/rooms/${encodeURIComponent(roomId)}/tools`;
 const tags = (roomId: string) => [{ type: "StudyTools" as const, id: roomId }];
 const clock = (timer: Timer) => ({ ...timer, receivedAt: performance.now() });
 export const activitiesApi = api
-  .enhanceEndpoints({ addTagTypes: ["StudyTools"] })
+  .enhanceEndpoints({ addTagTypes: ["StudyTools", "RoomBoard"] })
   .injectEndpoints({
     endpoints: (b) => ({
       roomTimer: b.query<Timer, string>({
@@ -67,8 +69,36 @@ export const activitiesApi = api
       }),
       roomBoard: b.query<Board, string>({
         query: (id) => `${path(id)}/board`,
-        providesTags: (_, __, id) => tags(id),
+        providesTags: (_, __, id) => [{ type: "RoomBoard", id }],
         keepUnusedDataFor: 30,
+        merge(current, incoming) {
+          if (incoming.version >= current.version) return incoming;
+        },
+        async onCacheEntryAdded(
+          roomId,
+          { cacheDataLoaded, cacheEntryRemoved, updateCachedData },
+        ) {
+          let latest: Board | undefined;
+          const apply = (incoming: Board) =>
+            updateCachedData((current) => {
+              if (incoming.version >= current.version) return incoming;
+            });
+          const unsubscribe = subscribeBoardSnapshots((incoming) => {
+            if (incoming.roomId !== roomId) return;
+            if (!latest || incoming.version >= latest.version) {
+              latest = incoming;
+              apply(incoming);
+            }
+          });
+          try {
+            await cacheDataLoaded;
+            if (latest) apply(latest);
+            await cacheEntryRemoved;
+          } catch {
+          } finally {
+            unsubscribe();
+          }
+        },
       }),
       changeBoard: b.mutation<Board, { roomId: string } & BoardChange>({
         query: ({ roomId, ...body }) => ({
@@ -76,7 +106,23 @@ export const activitiesApi = api
           method: "POST",
           body,
         }),
-        invalidatesTags: (_, __, { roomId }) => tags(roomId),
+        async onQueryStarted(
+          { roomId },
+          { dispatch, queryFulfilled },
+        ): Promise<void> {
+          try {
+            const { data } = await queryFulfilled;
+            dispatch(
+              activitiesApi.util.updateQueryData(
+                "roomBoard",
+                roomId,
+                (current) => {
+                  if (data.version >= current.version) return data;
+                },
+              ),
+            );
+          } catch {}
+        },
       }),
     }),
   });

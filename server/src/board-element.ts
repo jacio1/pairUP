@@ -1,6 +1,7 @@
 import { validId } from "./core";
 import { toolError } from "./study-note";
 export type BoardElement = {
+  strokeId?: string;
   id: string;
   kind: "pencil" | "line" | "square" | "circle" | "text";
   color: string;
@@ -13,6 +14,8 @@ export function boardElement(raw: unknown): BoardElement {
   if (
     !e ||
     !validId(e.id) ||
+    (e.strokeId !== undefined &&
+      (e.kind !== "pencil" || !validId(e.strokeId))) ||
     !["pencil", "line", "square", "circle", "text"].includes(e.kind) ||
     !/^#[0-9a-f]{6}$/i.test(e.color) ||
     ![2, 4, 8].includes(e.width) ||
@@ -49,6 +52,15 @@ export function boardElement(raw: unknown): BoardElement {
     color: e.color,
     width: e.width,
     points: e.points.map((p) => [...p]),
+    ...(e.strokeId ? { strokeId: e.strokeId } : {}),
     ...(e.kind === "text" ? { text: e.text!.trim() } : {}),
   };
+}
+
+export function removeBoardElement(elements: BoardElement[], id: string) {
+  const selected = elements.find((e) => e.id === id);
+  return elements.filter(
+    (e) =>
+      e.id !== id && (!selected?.strokeId || e.strokeId !== selected.strokeId),
+  );
 }

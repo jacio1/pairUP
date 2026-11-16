@@ -17,6 +17,7 @@ import { useBoardActions } from "./use-board-actions";
 import { BoardToolbar } from "./board-toolbar";
 import { BoardCanvas, type BoardTool } from "./board-canvas";
 import { ToolFeedback } from "./tool-feedback";
+import { BoardViewport } from "./board-viewport";
 export function WhiteboardPanel({ roomId }: { roomId: string }) {
   const t = useTranslations("Activities"),
     board = useBoardActions(roomId),
@@ -56,84 +57,116 @@ export function WhiteboardPanel({ roomId }: { roomId: string }) {
     setSelected(null);
   }
   return (
-    <div className="space-y-4" ref={container}>
-      <BoardToolbar
-        tool={tool}
-        setTool={setTool}
-        color={color}
-        setColor={setColor}
-        width={width}
-        setWidth={setWidth}
-        disabled={disabled}
-        selected={!!selected && !board.pending}
-        remove={remove}
-      />
-      {!board.data && !board.error && (
-        <p role="status" className="text-sm text-muted-foreground">
-          {t("loading")}
-        </p>
-      )}
-      <BoardCanvas
-        elements={board.elements}
-        tool={tool}
-        color={color}
-        width={width}
-        disabled={disabled}
-        selected={selected}
-        select={setSelected}
-        add={board.add}
-        remove={remove}
-      />
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <Button
-          variant="ghost"
-          size="sm"
-          disabled={disabled || !!board.pending || !board.elements.length}
-          onClick={() => setClear(true)}
+    <BoardViewport>
+      {({ expanded, zoom }) => (
+        <div
+          className={
+            expanded ? "flex min-h-0 flex-1 flex-col gap-3" : "space-y-4"
+          }
+          ref={container}
         >
-          <Trash2 className="size-4" />
-          {t("clearBoard")}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={!board.data || !!board.pending}
-          onClick={exportBoard}
-        >
-          <Download className="size-4" />
-          {t("exportBoard")}
-        </Button>
-      </div>
-      <p role="status" className="text-xs leading-5 text-muted-foreground">
-        {!board.connected
-          ? t("offline")
-          : board.pending
-            ? t("saving")
-            : t("boardHint")}
-      </p>
-      <ToolFeedback error={board.error} retry={board.retry} />
-      {board.error && !!board.pending && (
-        <Button variant="ghost" size="sm" onClick={board.discard}>
-          {t("discard")}
-        </Button>
-      )}
-      <AlertDialog open={clear} onOpenChange={setClear}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>{t("clearBoard")}</AlertDialogTitle>
-            <AlertDialogDescription>{t("clearConfirm")}</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>{t("cancel")}</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              onClick={() => void board.command("clear")}
+          <BoardToolbar
+            tool={tool}
+            setTool={setTool}
+            color={color}
+            setColor={setColor}
+            width={width}
+            setWidth={setWidth}
+            disabled={disabled}
+            selected={!!selected && !board.pending}
+            remove={remove}
+          />
+          {!board.data && !board.error && (
+            <p role="status" className="text-sm text-muted-foreground">
+              {t("loading")}
+            </p>
+          )}
+          <div
+            className={
+              expanded
+                ? "min-h-0 flex-1 overflow-auto overscroll-contain rounded-xl bg-muted/40"
+                : ""
+            }
+          >
+            <div style={{ width: `${zoom * 100}%` }}>
+              <BoardCanvas
+                elements={board.elements}
+                tool={tool}
+                color={color}
+                width={width}
+                disabled={disabled}
+                selected={selected}
+                select={setSelected}
+                add={board.add}
+                remove={remove}
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={disabled || !!board.pending || !board.elements.length}
+              onClick={() => setClear(true)}
             >
+              <Trash2 className="size-4" />
               {t("clearBoard")}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!board.data || !!board.pending}
+              onClick={exportBoard}
+            >
+              <Download className="size-4" />
+              {t("exportBoard")}
+            </Button>
+          </div>
+          <p role="status" className="text-xs leading-5 text-muted-foreground">
+            {!board.connected
+              ? t("offline")
+              : board.pending
+                ? t("saving")
+                : t(expanded ? "panHint" : "boardHint")}
+          </p>
+          <ToolFeedback error={board.error} retry={board.retry} />
+          {board.error && !!board.pending && (
+            <Button variant="ghost" size="sm" onClick={board.discard}>
+              {t("discard")}
+            </Button>
+          )}
+          <AlertDialog
+            open={clear}
+            onOpenChange={(open) => {
+              if (!board.busy) setClear(open);
+            }}
+          >
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>{t("clearBoard")}</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("clearConfirm")}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <ToolFeedback error={board.error} />
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={board.busy}>
+                  {t("cancel")}
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  variant="destructive"
+                  disabled={disabled || !!board.pending}
+                  onClick={async () => {
+                    if (await board.command("clear")) setClear(false);
+                  }}
+                >
+                  {t("clearBoard")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
+      )}
+    </BoardViewport>
   );
 }

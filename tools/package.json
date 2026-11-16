@@ -16,6 +16,7 @@
     "test:study-tools": "node study-tools-test.mjs",
     "test:profiles": "node profiles-test.mjs",
     "test:chat-history": "node chat-history-test.mjs",
+    "test:board-regression": "node board-regression-test.mjs",
     "test:activities": "node activities-test.mjs",
     "test:files": "node files-test.mjs"
   },

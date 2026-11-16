@@ -1,5 +1,11 @@
 {
   "Activities": {
+    "expandBoard": "Full screen",
+    "collapseBoard": "Exit full screen",
+    "zoomIn": "Zoom in",
+    "zoomOut": "Zoom out",
+    "fitBoard": "Fit board",
+    "panHint": "To move around the zoomed board, choose Select and drag the board with your finger.",
     "focus": "Focus",
     "break": "Short break",
     "longBreak": "Long break",

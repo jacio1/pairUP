@@ -2,17 +2,12 @@
 import { useState } from "react";
 import { useRoomFilesQuery } from "@/lib/files-api";
 import { Button } from "@/components/ui/button";
-import { UploadCloud } from "lucide-react";
 import { useTranslations, useFormatter } from "next-intl";
-import { useRoomUploads } from "./upload-provider";
-import { UploadProgress } from "./upload-progress";
-import { FileDropZone } from "./file-drop-zone";
 import { AttachmentCard } from "./attachment-card";
 export function FilesPanel({ roomId }: { roomId: string }) {
   const [gallery, setGallery] = useState(false);
   const t = useTranslations("Files"),
-    format = useFormatter(),
-    { choose } = useRoomUploads();
+    format = useFormatter();
   const {
     data = [],
     isLoading,
@@ -23,18 +18,7 @@ export function FilesPanel({ roomId }: { roomId: string }) {
     refetchOnMountOrArgChange: 30,
   });
   return (
-    <FileDropZone className="space-y-4">
-      <div className="rounded-xl border border-dashed border-primary/40 bg-card p-5 text-center">
-        <UploadCloud className="mx-auto mb-3 size-7 text-primary" />
-        <h3 className="text-sm font-medium">{t("drop")}</h3>
-        <p className="mt-2 text-xs leading-6 text-muted-foreground">
-          {t("limits")}
-        </p>
-        <Button className="mt-4" variant="outline" onClick={choose}>
-          {t("choose")}
-        </Button>
-      </div>
-      <UploadProgress />
+    <div className="space-y-4">
       <div
         className="flex gap-2 rounded-xl bg-muted p-1"
         role="group"
@@ -98,6 +82,6 @@ export function FilesPanel({ roomId }: { roomId: string }) {
             ))}
         </ul>
       )}
-    </FileDropZone>
+    </div>
   );
 }

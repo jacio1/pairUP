@@ -67,14 +67,15 @@ export class StudyToolsController {
     res.setHeader("Cache-Control", "no-store");
     return this.activities.board(roomId);
   }
-  @Post("board") updateBoard(
+  @Post("board") async updateBoard(
     @Req() req: Request,
     @Param("roomId") roomId: string,
     @Body() body: Parameters<RoomActivities["updateBoard"]>[1],
   ) {
-    return this.change(req, roomId, () =>
-      this.activities.updateBoard(roomId, body),
-    );
+    await this.access(req, roomId, true);
+    const result = await this.activities.updateBoard(roomId, body);
+    this.rt.emit("board:changed", result, roomId);
+    return result;
   }
   @Get() async snapshot(
     @Req() req: Request,

@@ -13,6 +13,8 @@ import {
 import { io } from "socket.io-client";
 import { studyApi } from "@/lib/study-tools-api";
 import { filesApi } from "@/lib/files-api";
+import { activitiesApi, type Board } from "@/lib/room-activities-api";
+import { publishBoardSnapshot } from "@/lib/board-events";
 export function useChatConnection() {
   const store = useAppStore();
   const dispatch = useAppDispatch();
@@ -115,6 +117,12 @@ export function useChatConnection() {
     socket.on("room:ready", () => {
       if (roomId)
         dispatch(
+          activitiesApi.util.invalidateTags([
+            { type: "RoomBoard", id: roomId },
+          ]),
+        );
+      if (roomId)
+        dispatch(
           filesApi.util.invalidateTags([{ type: "RoomFiles", id: roomId }]),
         );
       if (roomId)
@@ -140,6 +148,9 @@ export function useChatConnection() {
         );
       },
     );
+    socket.on("board:changed", (board: Board) => {
+      if (board?.roomId === roomId) publishBoardSnapshot(board);
+    });
     socket.on("message:created", (m: Message) => {
       if (synchronizing) buffer.push(m);
       else dispatch(actions.merge([m]));

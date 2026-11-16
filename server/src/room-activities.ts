@@ -1,6 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { PrismaClient, Prisma } from "@prisma/client";
-import { boardElement, type BoardElement } from "./board-element";
+import {
+  boardElement,
+  removeBoardElement,
+  type BoardElement,
+} from "./board-element";
 import { changeTimer, type TimerInput } from "./room-timer";
 import { toolError, versionInput } from "./study-note";
 @Injectable()
@@ -77,7 +81,7 @@ export class RoomActivities {
         elements = [...elements, element];
       } else {
         if (typeof input.id !== "string") return toolError("INVALID_INPUT");
-        elements = elements.filter((e) => e.id !== input.id);
+        elements = removeBoardElement(elements, input.id);
       }
       return tx.roomBoard.update({
         where: { roomId },

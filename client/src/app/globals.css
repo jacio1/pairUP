@@ -280,3 +280,27 @@
     -webkit-tap-highlight-color: transparent;
   }
 }
+
+/* Override the centered popup layout for the drawing workspace, including
+   its opening animation, so mobile coordinates remain stable. */
+.board-fullscreen[data-slot="dialog-content"] {
+  position: fixed;
+  inset: 0 !important;
+  width: 100vw !important;
+  max-width: none !important;
+  height: 100dvh !important;
+  max-height: none !important;
+  --tw-translate-x: 0px;
+  --tw-translate-y: 0px;
+  translate: 0px 0px !important;
+  transform: none !important;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  border-radius: 0;
+  overflow: hidden;
+  animation: none;
+  transition: none !important;
+}

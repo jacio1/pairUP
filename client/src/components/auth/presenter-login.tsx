@@ -28,7 +28,7 @@ export function PresenterLogin({
           required
           autoComplete="current-password"
         />
-        <Button disabled={isLoading}>{t("login")}</Button>
+        <Button type="submit" disabled={isLoading}>{t("login")}</Button>
       </form>
     </details>
   );

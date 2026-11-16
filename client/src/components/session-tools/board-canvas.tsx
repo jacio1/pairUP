@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import type { BoardElement } from "@/lib/room-activities-api";
 import { BoardShape } from "./board-shape";
+import { extendStroke } from "@/lib/board-stroke";
 export type BoardTool = BoardElement["kind"] | "pointer";
 export function BoardCanvas({
   elements,
@@ -40,14 +41,15 @@ export function BoardCanvas({
     [position, setPosition] = useState<number[] | null>(null),
     [text, setText] = useState("");
   function point(e: PointerEvent<SVGSVGElement>) {
-    const r = e.currentTarget.getBoundingClientRect();
+    const svg = e.currentTarget,
+      matrix = svg.getScreenCTM();
+    const cursor = svg.createSVGPoint();
+    cursor.x = e.clientX;
+    cursor.y = e.clientY;
+    const p = matrix ? cursor.matrixTransform(matrix.inverse()) : cursor;
     return [
-      Math.round(
-        Math.max(0, Math.min(1000, ((e.clientX - r.left) / r.width) * 1000)),
-      ),
-      Math.round(
-        Math.max(0, Math.min(700, ((e.clientY - r.top) / r.height) * 700)),
-      ),
+      Math.round(Math.max(0, Math.min(1000, p.x)) * 100) / 100,
+      Math.round(Math.max(0, Math.min(700, p.y)) * 100) / 100,
     ];
   }
   function start(e: PointerEvent<SVGSVGElement>) {
@@ -68,8 +70,10 @@ export function BoardCanvas({
     }
     pointer.current = e.pointerId;
     e.currentTarget.setPointerCapture(e.pointerId);
+    const id = crypto.randomUUID();
     draftRef.current = {
-      id: crypto.randomUUID(),
+      id,
+      ...(tool === "pencil" ? { strokeId: id } : {}),
       kind: tool,
       color,
       width,
@@ -80,21 +84,9 @@ export function BoardCanvas({
   function move(e: PointerEvent<SVGSVGElement>) {
     const current = draftRef.current;
     if (!current || pointer.current !== e.pointerId) return;
-    const p = point(e),
-      last = current.points.at(-1)!;
-    if (Math.hypot(p[0] - last[0], p[1] - last[1]) < 2) return;
-    const points =
-      current.kind === "pencil"
-        ? [...current.points, p]
-        : [current.points[0], p];
-    // Bound every stroke while preserving its start and most recent points.
-    draftRef.current = {
-      ...current,
-      points:
-        points.length > 250
-          ? points.filter((_, i) => i % 2 === 0 || i === points.length - 1)
-          : points,
-    };
+    const next = extendStroke(current, point(e), () => crypto.randomUUID());
+    if (next.completed) add(next.completed);
+    draftRef.current = next.draft;
     setDraft(draftRef.current);
   }
   function end(e: PointerEvent<SVGSVGElement>, cancel = false) {
@@ -129,7 +121,7 @@ export function BoardCanvas({
             remove();
           }
         }}
-        className={`block aspect-[10/7] w-full touch-none rounded-xl border bg-white outline-none focus-visible:ring-2 focus-visible:ring-ring ${disabled ? "cursor-not-allowed" : tool === "pointer" ? "cursor-default" : "cursor-crosshair"}`}
+        className={`block aspect-[10/7] w-full rounded-xl border bg-white outline-none focus-visible:ring-2 focus-visible:ring-ring ${tool === "pointer" ? "touch-auto" : "touch-none"} ${disabled ? "cursor-not-allowed" : tool === "pointer" ? "cursor-default" : "cursor-crosshair"}`}
       >
         <rect width="1000" height="700" fill="white" />
         {elements.map((element) => (

@@ -15,7 +15,10 @@ const value = (key) =>
   settings.match(new RegExp(`^${key}=(.+)$`, "m"))?.[1]?.trim();
 const base = value("PUBLIC_ORIGIN"),
   password = value("PRESENTER_PASSWORD");
-assert.match(base, /^https:\/\/(?:[a-z0-9-]+\.trycloudflare\.com|pair-up\.ru)$/);
+assert.match(
+  base,
+  /^https:\/\/(?:[a-z0-9-]+\.trycloudflare\.com|pair-up\.ru)$/,
+);
 const browser = await chromium.launch({ channel: "msedge", headless: true });
 const a = await browser.newContext({ locale: "en-US" }),
   b = await browser.newContext({
@@ -35,14 +38,40 @@ try {
     await probe.goto("http://pair-up.ru/?source=https-check");
     assert.equal(probe.url(), "https://pair-up.ru/?source=https-check");
     await probe.close();
-    console.log("PASS: browser HTTP navigation redirects to valid HTTPS without losing the query string.");
+    console.log(
+      "PASS: browser HTTP navigation redirects to valid HTTPS without losing the query string.",
+    );
   }
-  const owner = await check(
-    await a.request.post(`${base}/api/auth/presenter`, { data: { password } }),
+  const loginPage = await a.newPage();
+  await loginPage.goto(`${base}/profile`);
+  await loginPage
+    .getByRole("button", { name: en.Auth.login, exact: true })
+    .click();
+  const loginDialog = loginPage.getByRole("dialog");
+  await loginDialog.locator("summary").click();
+  await loginDialog
+    .locator("details")
+    .getByLabel(en.Auth.password, { exact: true })
+    .fill(password);
+  const loginResponse = loginPage.waitForResponse(
+    (response) =>
+      response.url() === `${base}/api/auth/presenter` &&
+      response.request().method() === "POST",
   );
+  await loginDialog
+    .locator("details")
+    .getByRole("button", { name: en.Auth.login, exact: true })
+    .click();
+  const owner = await check(await loginResponse);
   sessions.push(owner.id);
+  assert.equal(owner.role, "presenter");
+  await loginDialog.waitFor({ state: "hidden" });
+  await loginPage.close();
   const guest = await check(
-    await b.request.post(`${base}/api/auth/demo`, { data: {}, headers: { Origin: base } }),
+    await b.request.post(`${base}/api/auth/demo`, {
+      data: {},
+      headers: { Origin: base },
+    }),
   );
   sessions.push(guest.id);
   const cookie = (await a.cookies()).find((c) => c.httpOnly);
