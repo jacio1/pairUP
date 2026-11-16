@@ -136,8 +136,6 @@
     "connected": "Connected",
     "reconnecting": "Reconnecting — waiting for the room…",
     "clearChat": "Clear conversation",
-    "roomWelcome": "Good conversations start with a hello.",
-    "roomWelcomeText": "Say hello in English and introduce yourself. Practice, ask questions and explore new expressions together.",
     "neuron": "Neuron",
     "askedNeuron": "asked Neuron",
     "askAboutMessage": "Ask Neuron about this message",

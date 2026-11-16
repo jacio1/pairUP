@@ -8,8 +8,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import { actions, api, useLogoutMutation } from "@/lib/store";
+import { useSignOut } from "@/components/auth/use-sign-out";
+import { useAppSelector } from "@/lib/hooks";
 import {
   BookOpen,
   FileText,
@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 export function UserMenu() {
   const t = useTranslations("Demo");
   const p = useTranslations("Product");
@@ -29,20 +28,8 @@ export function UserMenu() {
   const { data: profile } = useMyProfileQuery(undefined, { skip: !session });
   const displayName = profile?.name || session?.name || "";
   const openAuth = useAuth();
-  const router = useRouter();
-  const dispatch = useAppDispatch();
-  const [logout] = useLogoutMutation();
-  async function signOut() {
-    try {
-      await logout().unwrap();
-      dispatch(actions.session(null));
-      dispatch(actions.room());
-      dispatch(api.util.resetApiState());
-      router.push("/");
-    } catch {
-      /* Keep the authenticated state when logout fails. */
-    }
-  }
+  const { signOut, isLoading, error } = useSignOut();
+  const errors = useTranslations("Errors");
   return (
     <>
       {" "}
@@ -89,11 +76,17 @@ export function UserMenu() {
             <Button
               variant="ghost"
               className="w-full justify-start"
+              disabled={isLoading}
               onClick={() => void signOut()}
             >
               <LogOut className="size-4" />
               {a("logout")}
             </Button>
+            {error && (
+              <p role="alert" className="px-3 py-2 text-xs text-destructive">
+                {errors("SERVER_ERROR")}
+              </p>
+            )}
           </PopoverContent>
         </Popover>
       ) : (

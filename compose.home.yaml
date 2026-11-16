@@ -1,0 +1,62 @@
+name: pairup-home
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: pairup
+      POSTGRES_DB: pairup
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run deploy/home/configure.mjs}
+    volumes:
+      - home_database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pairup -d pairup"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    restart: unless-stopped
+  server:
+    image: pairup-home-server:latest
+    build: ./server
+    environment:
+      DATABASE_URL: postgresql://pairup:${POSTGRES_PASSWORD}@db:5432/pairup?schema=public
+      PUBLIC_ORIGIN: ${PUBLIC_ORIGIN:-http://localhost:18080}
+      COOKIE_SECURE: "true"
+      PRESENTER_PASSWORD: ${PRESENTER_PASSWORD:?Run deploy/home/configure.mjs}
+      WORKER_SECRET: ${WORKER_SECRET:?Run deploy/home/configure.mjs}
+      LOCAL_TIMEOUT_MS: "45000"
+      UPLOAD_DIR: /app/uploads
+    volumes:
+      - home_uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+  client:
+    image: pairup-home-client:latest
+    build: ./client
+    environment:
+      COOKIE_SECURE: "true"
+    depends_on:
+      - server
+    restart: unless-stopped
+  proxy:
+    image: caddy:2-alpine
+    ports:
+      - "127.0.0.1:18080:80"
+    volumes:
+      - ./deploy/home/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      - client
+      - server
+    restart: unless-stopped
+  tunnel:
+    image: cloudflare/cloudflared:latest
+    profiles: [public]
+    command: [tunnel, --no-autoupdate, --protocol, http2, --url, "http://proxy:80"]
+    depends_on:
+      - proxy
+    # Quick Tunnel addresses change on restart. Use start.ps1 to resync PUBLIC_ORIGIN.
+    restart: "no"
+volumes:
+  home_database:
+  home_uploads:

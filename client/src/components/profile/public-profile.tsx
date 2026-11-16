@@ -36,19 +36,10 @@ export function PublicProfilePage({ id }: { id: string }) {
         <Button variant="outline" onClick={() => void refetch()}>
           {t("retry")}
         </Button>
-        <Link className="ml-4 text-sm text-primary" href="/">
-          {t("back")}
-        </Link>
       </main>
     );
   return (
     <main className="page-shell space-y-6">
-      <Link
-        href="/"
-        className="text-sm text-muted-foreground hover:text-primary"
-      >
-        ← {t("back")}
-      </Link>
       <ProfileHeader
         profile={profile}
         actions={

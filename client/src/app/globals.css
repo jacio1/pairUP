@@ -147,7 +147,7 @@
     width: 100%;
     max-width: 1280px;
     margin-inline: auto;
-    padding: 32px 20px 40px;
+    padding: 32px 8px 40px;
   }
   .display-title {
     max-width: 720px;
@@ -239,7 +239,7 @@
   }
   @media (min-width: 640px) {
     .page-shell {
-      padding: 40px 32px 56px;
+      padding: 40px 8px 56px;
     }
   }
   @media (min-width: 1024px) {

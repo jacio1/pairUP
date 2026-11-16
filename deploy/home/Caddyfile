@@ -1,0 +1,27 @@
+:80 {
+  # cloudflared reaches Caddy over HTTP even when the visitor uses HTTPS.
+  # Cloudflare supplies the original visitor protocol in this header.
+  @publicHttp {
+    host pair-up.ru
+    header X-Forwarded-Proto http
+  }
+  redir @publicHttp https://pair-up.ru{uri} 308
+  @publicHttps {
+    host pair-up.ru
+    header X-Forwarded-Proto https
+  }
+  header @publicHttps Strict-Transport-Security "max-age=86400"
+  encode zstd gzip
+  header {
+    X-Content-Type-Options nosniff
+    Referrer-Policy strict-origin-when-cross-origin
+    -Server
+  }
+  @backend path /api/* /socket.io/*
+  handle @backend {
+    reverse_proxy server:4000
+  }
+  handle {
+    reverse_proxy client:3000
+  }
+}

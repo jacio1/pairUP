@@ -1,0 +1,6 @@
+services:
+  tunnel:
+    command: !override [tunnel, --no-autoupdate, --protocol, http2, run]
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?Set the tunnel token in .env.home}
+    restart: unless-stopped

@@ -84,16 +84,16 @@ export class Database
       create: { id: "demo-listing", roomId: "listing-english-practice" },
       update: { roomId: "listing-english-practice" },
     });
-    const alex = await this.publicProfile.upsert({
+    const englishAuthor = await this.publicProfile.upsert({
       where: { seedKey: "english-author" },
-      create: { seedKey: "english-author", name: "Alex" },
-      update: {},
+      create: { seedKey: "english-author", name: "EnglishVUZ" },
+      update: { name: "EnglishVUZ" },
     });
     await this.listing.updateMany({
       where: { id: "demo-listing" },
       data: {
-        authorName: "Alex",
-        authorProfileId: alex.id,
+        authorName: "EnglishVUZ",
+        authorProfileId: englishAuthor.id,
         title: "English",
         subject: "english",
         level: "intermediate",

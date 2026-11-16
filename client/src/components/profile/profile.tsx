@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ExternalLink, Pencil } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
-import { PresenterAccess } from "./presenter-access";
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ProfileEditDialog } from "./profile-edit-dialog";
 import { ProfileMenu } from "./profile-menu";
 import { ProfileHeader } from "./profile-header";
@@ -14,7 +14,7 @@ export function Profile() {
   const form = useProfileForm();
   const t = useTranslations("SocialProfile"),
     p = useTranslations("Product");
-  const { publicProfile: profile, session, profileStatus } = form;
+  const { publicProfile: profile, profileStatus } = form;
   if (form.isLoading)
     return (
       <main className="p-8" role="status">
@@ -63,7 +63,7 @@ export function Profile() {
         <aside className="min-w-0 space-y-5">
           <ProfileAbout profile={profile} />
           <ProfileMenu />
-          {session?.role !== "presenter" && <PresenterAccess />}
+          <SignOutButton />
         </aside>
         <ProfileListings listings={profile.listings} />
       </div>

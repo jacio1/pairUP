@@ -74,13 +74,14 @@ async function createListing(title, long = false) {
     201,
   );
 }
-async function cardHeights(page, expected) {
+async function cardHeights(page) {
   await page.getByRole("article").first().waitFor();
   const bounds = await page.getByRole("article").evaluateAll((nodes) =>
     nodes.map((node) => {
       const r = node.getBoundingClientRect();
       return {
         height: r.height,
+        title: node.querySelector('a[title]')?.textContent,
         bottom: r.bottom,
         actions: [...node.querySelectorAll("button,a")].map(
           (el) => el.getBoundingClientRect().bottom,
@@ -90,7 +91,7 @@ async function cardHeights(page, expected) {
   );
   assert.ok(bounds.length >= 2);
   for (const r of bounds) {
-    assert.equal(Math.round(r.height), expected);
+    assert.ok(r.height >= 190 && r.height < 340, `Card fits its content: ${r.height}`);
     assert.ok(r.actions.every((bottom) => bottom <= r.bottom));
   }
   assert.equal(
@@ -246,7 +247,7 @@ try {
     false,
   );
   await pb.goto(base);
-  await cardHeights(pb, 340);
+  await cardHeights(pb);
   await pb.screenshot({
     path: "artifacts/fixed-cards-mobile.png",
     fullPage: true,
@@ -257,7 +258,7 @@ try {
     localStorage.setItem("theme", "dark");
     location.reload();
   });
-  await cardHeights(pg, 352);
+  await cardHeights(pg);
   await pg.screenshot({
     path: "artifacts/fixed-cards-desktop-dark.png",
     fullPage: true,
@@ -286,7 +287,7 @@ try {
     .waitFor();
   assert.deepEqual(errors, []);
   console.log(
-    "PASS: fixed card heights and visible actions; server profiles; public card/detail links; private editing; save/cancel; name/avatar propagation; isolation, privacy, version conflicts; RU/EN, desktop/mobile and dark theme.",
+    "PASS: content-sized cards and visible actions; server profiles; public card/detail links; private editing; save/cancel; name/avatar propagation; isolation, privacy, version conflicts; RU/EN, desktop/mobile and dark theme.",
   );
 } finally {
   await browser.close();

@@ -20,14 +20,13 @@ export function MessageList({
     | "presenter"
     | "retryAi"
     | "mode"
-    | "listing"
   >;
 }) {
   const t = useTranslations("Demo");
   const errors = useTranslations("Errors");
-  const { session, messages, busy, ai, presenter, retryAi, mode, listing } =
+  const { session, messages, busy, ai, presenter, retryAi, mode } =
     chat;
-  const { viewport, onScroll, older, loading, error, hasOlder, historyReady } =
+  const { viewport, onScroll, older, loading, error, hasOlder } =
     useMessageHistory();
   const extra = useTranslations("ChatExtras");
   const references = useAppSelector((s) => s.chat.references);
@@ -55,17 +54,6 @@ export function MessageList({
             >
               {extra(loading ? "loading" : error ? "retry" : "older")}
             </Button>
-          </div>
-        )}
-        {historyReady && !hasOlder && (
-          <div className="mx-auto mb-8 max-w-sm rounded-2xl border border-border/60 bg-card/80 px-5 py-4 text-center">
-            <NeuronMascot className="mx-auto mb-2 size-20" />
-            <h2 className="text-xs font-semibold">
-              {listing?.title || "PairUp"}
-            </h2>
-            <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
-              {t("roomWelcomeText")}
-            </p>
           </div>
         )}
         {messages.map((message) => (

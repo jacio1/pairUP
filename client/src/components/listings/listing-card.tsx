@@ -50,7 +50,7 @@ export function ListingCard({
     "bg-amber-100/70 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300";
   return (
     <Card
-      className="listing-card h-[340px] min-w-0 gap-0 border border-border bg-card py-0 ring-0 hover:border-primary/40 sm:h-[352px]"
+      className="listing-card h-full min-w-0 gap-0 border border-border bg-card py-0 ring-0 hover:border-primary/40"
       style={
         {
           "--course-color": courseColors[listing.subject] || "#D6A46B",
