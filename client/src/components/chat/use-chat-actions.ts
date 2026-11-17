@@ -32,6 +32,7 @@ export function useChatActions(roomId: string) {
   } | null>(null);
   const busy = ai?.status === "running" || ai?.status === "pending";
   const presenter = session?.role === "presenter";
+  const canAskNeuron = !!session;
   function mode(message?: Message) {
     dispatch(actions.mode({ enabled: true, target: message }));
     input.current?.focus();
@@ -125,6 +126,7 @@ export function useChatActions(roomId: string) {
     input,
     busy,
     presenter,
+    canAskNeuron,
     mode,
     retryAi,
     send,

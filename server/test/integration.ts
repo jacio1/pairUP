@@ -123,7 +123,7 @@ test("sessions, realtime delivery, context, AI fallback, reset and recovery", as
       );
       assert.equal(
         (await request("/rooms/demo/ai/requests", guest.cookie, {})).status,
-        403,
+        400,
       );
     });
     await request("/rooms/demo/reset", presenter.cookie, {});

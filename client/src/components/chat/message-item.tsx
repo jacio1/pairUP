@@ -10,13 +10,13 @@ export function MessageItem({
   message,
   parent,
   mine,
-  presenter,
+  canAskNeuron,
   mode,
 }: {
   message: Message;
   parent?: Pick<Message, "text">;
   mine: boolean;
-  presenter: boolean;
+  canAskNeuron: boolean;
   mode: (message: Message) => void;
 }) {
   const t = useTranslations("Demo");
@@ -97,7 +97,7 @@ export function MessageItem({
             })}
           </time>
         </div>
-        {presenter && (
+        {canAskNeuron && (
           <Button
             variant="ghost"
             size="xs"

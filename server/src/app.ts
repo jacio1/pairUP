@@ -965,8 +965,7 @@ export class Api {
     @Param("id") id: string,
     @Body() body: Parameters<Chat["requestAi"]>[1],
   ) {
-    await this.auth.roomAccess(req.headers.cookie, id);
-    const session = await this.auth.require(req.headers.cookie, true);
+    const session = await this.auth.roomAccess(req.headers.cookie, id);
     return this.chat.requestAi(this.auth.view(session), body, id);
   }
   @Post("rooms/:id/reset") async reset(

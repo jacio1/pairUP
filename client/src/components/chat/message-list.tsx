@@ -13,19 +13,12 @@ export function MessageList({
 }: {
   chat: Pick<
     ChatActions,
-    | "session"
-    | "messages"
-    | "busy"
-    | "ai"
-    | "presenter"
-    | "retryAi"
-    | "mode"
+    "session" | "messages" | "busy" | "ai" | "canAskNeuron" | "retryAi" | "mode"
   >;
 }) {
   const t = useTranslations("Demo");
   const errors = useTranslations("Errors");
-  const { session, messages, busy, ai, presenter, retryAi, mode } =
-    chat;
+  const { session, messages, busy, ai, canAskNeuron, retryAi, mode } = chat;
   const { viewport, onScroll, older, loading, error, hasOlder } =
     useMessageHistory();
   const extra = useTranslations("ChatExtras");
@@ -65,7 +58,7 @@ export function MessageList({
               references[message.targetMessageId || ""]
             }
             mine={message.sessionId === session?.id}
-            presenter={presenter}
+            canAskNeuron={canAskNeuron}
             mode={mode}
           />
         ))}
@@ -92,7 +85,7 @@ export function MessageList({
                 ? "AI_INTERRUPTED"
                 : "AI_UNAVAILABLE",
             )}
-            {presenter && (
+            {canAskNeuron && (
               <Button variant="ghost" size="sm" onClick={retryAi}>
                 <RotateCcw className="size-3" />
                 {t("tryAgain")}

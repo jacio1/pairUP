@@ -16,7 +16,7 @@ export function ChatComposer({
   chat: Pick<
     ChatActions,
     | "connected"
-    | "presenter"
+    | "canAskNeuron"
     | "aiMode"
     | "mode"
     | "target"
@@ -37,7 +37,7 @@ export function ChatComposer({
   const { choose } = useRoomUploads();
   const {
     connected,
-    presenter,
+    canAskNeuron,
     aiMode,
     mode,
     send,
@@ -67,7 +67,7 @@ export function ChatComposer({
             variant={aiMode ? "secondary" : "outline"}
             size="sm"
             className="shrink-0 gap-1.5 text-primary"
-            disabled={!presenter}
+            disabled={!canAskNeuron}
             aria-describedby="neuron-access-hint"
             onClick={() =>
               aiMode ? dispatch(actions.mode({ enabled: false })) : mode()
@@ -81,7 +81,7 @@ export function ChatComposer({
             id="neuron-access-hint"
             className="text-[10px] leading-4 text-muted-foreground"
           >
-            {t(presenter ? "onlyHost" : "neuronHostOnly")}
+            {t("onlyHost")}
           </span>
         </div>
         {aiMode && <NeuronContext chat={chat} />}
