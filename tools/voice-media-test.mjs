@@ -1,4 +1,4 @@
-// Isolated real-SFU smoke test. Start compose.voice.yaml first. No app DB/chat writes.
+// Isolated real-SFU smoke test. Uses LIVEKIT_* or local dev defaults. No app DB/chat writes.
 import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import { readFileSync } from "node:fs";
@@ -13,10 +13,13 @@ const {
   TrackSource,
 } = require("livekit-server-sdk");
 const roomName = `voice-smoke-${crypto.randomUUID()}`;
+const livekitUrl = process.env.LIVEKIT_URL || "ws://localhost:7880";
+const apiKey = process.env.LIVEKIT_API_KEY || "devkey";
+const apiSecret = process.env.LIVEKIT_API_SECRET || "secret";
 const admin = new RoomServiceClient(
-  "http://localhost:7880",
-  "devkey",
-  "secret",
+  livekitUrl.replace(/^ws/, "http"),
+  apiKey,
+  apiSecret,
 );
 const bundle = readFileSync(
   new URL(
@@ -50,7 +53,7 @@ try {
     const context = await browser.newContext({ permissions: ["microphone"] });
     const page = await context.newPage();
     await page.goto(`http://127.0.0.1:${server.address().port}`);
-    const token = new AccessToken("devkey", "secret", { identity, ttl: 120 });
+    const token = new AccessToken(apiKey, apiSecret, { identity, ttl: 120 });
     token.addGrant({
       room: roomName,
       roomJoin: true,
@@ -60,17 +63,17 @@ try {
       canPublishData: false,
     });
     await page.evaluate(
-      async (jwt) => {
+      async ({jwt, url}) => {
         window.voice = new LivekitClient.Room();
         window.received = [];
         voice.on(LivekitClient.RoomEvent.TrackSubscribed, (track) => {
           received.push(track);
           document.body.append(track.attach());
         });
-        await voice.connect("ws://localhost:7880", jwt);
+        await voice.connect(url, jwt);
         await voice.startAudio();
       },
-      await token.toJwt(),
+      {jwt: await token.toJwt(), url: livekitUrl},
     );
     pages.push(page);
   }

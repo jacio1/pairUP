@@ -2,12 +2,12 @@
   # cloudflared reaches Caddy over HTTP even when the visitor uses HTTPS.
   # Cloudflare supplies the original visitor protocol in this header.
   @publicHttp {
-    host pair-up.ru
+    host pair-up.ru pair-up.online
     header X-Forwarded-Proto http
   }
-  redir @publicHttp https://pair-up.ru{uri} 308
+  redir @publicHttp https://{host}{uri} 308
   @publicHttps {
-    host pair-up.ru
+    host pair-up.ru pair-up.online
     header X-Forwarded-Proto https
   }
   header @publicHttps Strict-Transport-Security "max-age=86400"

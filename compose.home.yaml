@@ -25,6 +25,9 @@ services:
       WORKER_SECRET: ${WORKER_SECRET:?Run deploy/home/configure.mjs}
       LOCAL_TIMEOUT_MS: "45000"
       UPLOAD_DIR: /app/uploads
+      LIVEKIT_URL: ${LIVEKIT_URL:-}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-}
     volumes:
       - home_uploads:/app/uploads
     depends_on:
