@@ -59,6 +59,16 @@ test("context isolates instruction and trims older records", () => {
   assert.match(messages[0].content, /untrusted/);
   assert.match(messages[2].content, /Translate to Russian/);
 });
+
+test("latest AI request is not wrapped in internal presenter labels", () => {
+  const prompt = "Когда была Вторая мировая война?";
+  const messages = buildContext([
+    { author: "TEST #1", kind: "ai-request", text: "Translate to Russian" },
+    { author: "Neuron", kind: "ai", text: "Представительский инструктаж: wrong answer" },
+  ], prompt, "ru");
+  assert.equal(messages.at(-1)?.content, prompt);
+  assert.match(messages[0].content, /Earlier translation requests do not apply/);
+});
 test("rate limit boundary and request validation", () => {
   const limit = new RateLimiter();
   assert.equal(limit.allow("a", 2, 1000, 0), true);
