@@ -320,9 +320,14 @@ function SocialActions({ post }: { post: SocialPost }) {
         aria-label={emoji === "❤️" ? t("like") : t("reactWith", { emoji })}
         aria-pressed={!!value?.active}
         disabled={reacting.isLoading}
-        onClick={() => {
+        onClick={async () => {
           if (!session) return openAuth();
-          void react({ id: post.id, emoji, active: !value?.active });
+          const result = await react({
+            id: post.id,
+            emoji,
+            active: !value?.active,
+          });
+          if (!result.error) setShowEmojis(false);
         }}
       >
         {emoji === "❤️" ? (
