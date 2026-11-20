@@ -305,7 +305,7 @@ export class SocialController {
     )
       return fail("INVALID_INPUT");
     const { id: profileId } = await this.profiles.ensure(req.socialSession);
-    const key = { postId, profileId, emoji };
+    const key = { postId, profileId };
     if (active) {
       if (
         !(await this.db.socialPost.findUnique({
@@ -314,12 +314,13 @@ export class SocialController {
         }))
       )
         return fail("NOT_FOUND", 404);
-      await this.db.socialReaction.createMany({
-        data: [key],
-        skipDuplicates: true,
+      await this.db.socialReaction.upsert({
+        where: { postId_profileId: key },
+        create: { ...key, emoji },
+        update: { emoji },
       });
     } else {
-      await this.db.socialReaction.deleteMany({ where: key });
+      await this.db.socialReaction.deleteMany({ where: { ...key, emoji } });
     }
     return { ok: true };
   }

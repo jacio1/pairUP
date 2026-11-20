@@ -240,7 +240,7 @@ model SocialReaction {
   profile   PublicProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   emoji     String
 
-  @@id([postId, profileId, emoji])
+  @@id([postId, profileId])
   @@index([profileId, emoji])
 }
 
