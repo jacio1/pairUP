@@ -1,9 +1,7 @@
-import * as Y from "yjs";
 import { HttpException } from "@nestjs/common";
+import * as Y from "yjs";
+import { fail as toolError } from "../common/api-error";
 
-export const toolError = (code: string, status = 400): never => {
-  throw new HttpException({ code }, status);
-};
 export const versionInput = (value: unknown) => {
   if (!Number.isSafeInteger(value) || (value as number) < 0)
     return toolError("INVALID_INPUT");

@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { useAppDispatch } from "@/lib/hooks";
-import { actions } from "@/lib/store";
+import { actions } from "@/lib/chat-state";
 import { X } from "lucide-react";
 import { NeuronMascot } from "@/components/neuron-mascot";
 import { useTranslations } from "next-intl";

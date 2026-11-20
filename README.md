@@ -21,7 +21,7 @@ This is a personal full-stack project and the foundation for a prospective maste
 1. **Discover a study opportunity.** Browse listings with a subject, learning goal, level, and preferred study format. Open a listing or its author's public profile to learn more.
 2. **Connect with a partner.** Propose a session. Once the listing owner accepts, both participants can access its study room.
 3. **Study in one place.** Use text and voice chat, shared notes, tasks, a whiteboard, and a synchronized Pomodoro timer.
-4. **Ask Neuron for help.** The session host can invoke the AI assistant from the composer or select a message as context—for example, to translate a conversation or explain a topic.
+4. **Ask Neuron for help.** Signed-in participants, including TEST users, can invoke the AI assistant from the composer or select a message as context—for example, to translate a conversation or explain a topic.
 5. **Return to your work.** Messages, uploaded materials, notes, tasks, and drawings remain available when the room is reopened.
 
 An English practice listing also provides a direct path into chat for demonstrations.
@@ -32,7 +32,7 @@ An English practice listing also provides a direct path into chat for demonstrat
 | --- | --- |
 | Discovery & profiles | Study listings, listing details, session proposals and acceptance, public profiles, profile editing, and profile previews inside chat. |
 | Real-time chat | Persistent messages, delivery acknowledgements, duplicate protection, reconnection recovery, and cursor-based history loading in batches of 50. |
-| AI assistant | Host-controlled requests, selected-message context, shared responses, local Ollama inference, and a configurable Yandex AI Studio fallback. |
+| AI assistant | Participant requests, selected-message context, shared responses, local Ollama inference, and a configurable Yandex AI Studio fallback. |
 | Voice | LiveKit-based audio rooms, microphone controls, participant indicators, and active-speaker feedback. Requires a configured LiveKit service. |
 | Shared notes & tasks | Yjs-based collaborative text editing, autosave, note export, task management, and shared progress. |
 | Whiteboard | Freehand drawing, lines, shapes, text, colors, stroke widths, element deletion, confirmed clearing, and SVG export. Completed strokes synchronize between participants. |
@@ -126,7 +126,7 @@ Copy-Item worker/.env.example worker/.env
 npm start --prefix worker
 ```
 
-The worker's `SERVER_URL` must point to the backend, and `WORKER_SECRET` must match the backend configuration. Sign in as Presenter and use **Ask Neuron** in a room. Cloud fallback requires the corresponding Yandex credentials and model URI.
+The worker's `SERVER_URL` must point to the backend, and `WORKER_SECRET` must match the backend configuration. Sign in, for example with TEST, and use **Ask Neuron** in an accessible room. Cloud fallback requires the corresponding Yandex credentials and model URI.
 
 For voice setup, see the [LiveKit deployment guide](deploy/VOICE.md).
 
@@ -138,6 +138,8 @@ npm run build --prefix client
 npm run build --prefix server
 npm test --prefix server
 ```
+
+Run `npm run test:modules --prefix server` with `TEST_DATABASE_URL` pointing to a separate PostgreSQL database with `test` in its name. These checks cover auth, room access, chat history, local/cloud AI, cancellation, tools and files. They create their own rooms and delete only their fixtures.
 
 Browser checks require the local frontend, backend, database, and Microsoft Edge:
 
@@ -159,6 +161,8 @@ These integration scenarios create isolated test data and cover participant acce
 | --- | --- |
 | [`client/`](client/) | Frontend organized by product features, reusable UI, localization, and state management. |
 | [`server/`](server/) | NestJS API, room authorization, real-time events, persistence, and database migrations. |
+| [`server/src/`](server/src/) | Feature modules: auth, database, realtime, chat, AI, listings, profiles, files, study tools and voice. Controllers handle HTTP; services own domain logic. |
+| [`client/src/lib/`](client/src/lib/) | Separate API endpoints, chat state, domain types and store composition. |
 | [`worker/`](worker/) | Local AI worker connecting the backend to Ollama. |
 | [`tools/`](tools/) | Browser integration checks and supporting utilities. |
 | [`deploy/`](deploy/) | Hosting, HTTPS, voice, file storage, and collaboration documentation. |

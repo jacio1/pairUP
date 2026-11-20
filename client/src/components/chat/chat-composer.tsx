@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/lib/hooks";
-import { actions } from "@/lib/store";
+import { actions } from "@/lib/chat-state";
 import { ArrowUp, Paperclip, WifiOff } from "lucide-react";
 import { NeuronMascot } from "@/components/neuron-mascot";
 import { useTranslations } from "next-intl";
@@ -81,7 +81,7 @@ export function ChatComposer({
             id="neuron-access-hint"
             className="text-[10px] leading-4 text-muted-foreground"
           >
-            {t("onlyHost")}
+            {t("neuronHint")}
           </span>
         </div>
         {aiMode && <NeuronContext chat={chat} />}

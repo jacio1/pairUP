@@ -2,7 +2,7 @@
 import { MessageProfile } from "./message-profile";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { type Message } from "@/lib/store";
+import { type Message } from "@/lib/chat-types";
 import { NeuronMascot } from "@/components/neuron-mascot";
 import { useFormatter, useTranslations } from "next-intl";
 import { AttachmentCard } from "@/components/files/attachment-card";

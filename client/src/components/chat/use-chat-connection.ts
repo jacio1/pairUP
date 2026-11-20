@@ -3,13 +3,9 @@ import { useEffect } from "react";
 
 import { bindChatSocket } from "@/lib/chat-transport";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/hooks";
-import {
-  actions,
-  api,
-  useMeQuery,
-  type AiStatus,
-  type Message,
-} from "@/lib/store";
+import { actions } from "@/lib/chat-state";
+import { api, useMeQuery } from "@/lib/api";
+import { type AiStatus, type Message } from "@/lib/chat-types";
 import { io } from "socket.io-client";
 import { studyApi } from "@/lib/study-tools-api";
 import { filesApi } from "@/lib/files-api";

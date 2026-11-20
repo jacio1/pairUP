@@ -4,7 +4,7 @@ import {
   identifyMedia,
   safeFilename,
   attachmentPath,
-} from "../src/file-storage";
+} from "../src/files/file-storage";
 test("inline file media is detected from signatures, not a claimed MIME", () => {
   assert.deepEqual(identifyMedia(Buffer.from('<svg onload="alert(1)"/>')), {
     kind: "file",

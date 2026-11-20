@@ -1,7 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { parseListing, subjects, levels } from "../src/listings";
+import {
+  parseListing,
+  subjects,
+  levels,
+} from "../src/listings/listing.validation";
 import {
   listingSubjects,
   listingLevels,

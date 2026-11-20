@@ -1,6 +1,7 @@
 "use client";
 import { useLayoutEffect, useRef, useState } from "react";
-import { actions, api } from "@/lib/store";
+import { actions } from "@/lib/chat-state";
+import { api } from "@/lib/api";
 import { useAppDispatch, useAppSelector, useAppStore } from "@/lib/hooks";
 export function useMessageHistory() {
   const dispatch = useAppDispatch(),

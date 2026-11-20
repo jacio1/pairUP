@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 import { DatabaseModule } from "../database/database.module";
+import { AuthSessionEvents } from "./auth-session.events";
 import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
-import { AuthSessionEvents } from "./auth-session.events";
 
 @Module({
   imports: [DatabaseModule],

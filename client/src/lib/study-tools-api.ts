@@ -1,4 +1,4 @@
-import { api } from "./store";
+import { api } from "./api";
 
 export type StudyNote = {
   id: string;

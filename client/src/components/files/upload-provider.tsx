@@ -2,7 +2,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useAppDispatch } from "@/lib/hooks";
-import { actions } from "@/lib/store";
+import { actions } from "@/lib/chat-state";
 import { filesApi, uploadFile } from "@/lib/files-api";
 
 export type UploadJob = {

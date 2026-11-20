@@ -1,4 +1,5 @@
-import { api, type Message } from "./store";
+import { api } from "./api";
+import { type Message } from "./chat-types";
 import type { Attachment } from "./attachments";
 export const filesApi = api
   .enhanceEndpoints({ addTagTypes: ["RoomFiles"] })

@@ -2,7 +2,10 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { extendStroke } from "../../client/src/lib/board-stroke";
 import type { BoardElement } from "../../client/src/lib/room-activities-api";
-import { boardElement, removeBoardElement } from "../src/board-element";
+import {
+  boardElement,
+  removeBoardElement,
+} from "../src/study-tools/board-element";
 test("long strokes keep all sampled geometry and continuous segment boundaries", () => {
   const points = Array.from({ length: 5000 }, (_, i) => [
     500 + 200 * Math.sin(i * 0.012),

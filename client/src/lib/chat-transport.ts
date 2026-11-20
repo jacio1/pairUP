@@ -1,5 +1,5 @@
 import type { Socket } from "socket.io-client";
-import type { Message } from "./store";
+import type { Message } from "./chat-types";
 type Delivery = { ok: boolean; code?: string; message?: Message };
 let activeSocket: Socket | null = null;
 export function bindChatSocket(socket: Socket) {

@@ -1,15 +1,13 @@
-import { Injectable, Inject, HttpException } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 import { parse, serialize } from "cookie";
-import { randomBytes } from "node:crypto";
 import type { Request, Response } from "express";
+import { randomBytes } from "node:crypto";
+import { fail } from "../common/api-error";
+import { hash, RateLimiter, secretEquals } from "../core";
 import { Database } from "../database/database.service";
-import { hash, secretEquals, RateLimiter } from "../core";
 import { AuthSessionEvents } from "./auth-session.events";
 
 const sessionCookie = "PAIRUP_SESSION";
-const fail = (code: string, status = 400): never => {
-  throw new HttpException({ code }, status);
-};
 
 @Injectable()
 export class AuthService {
@@ -120,3 +118,9 @@ export class AuthService {
     return { ok: true };
   }
 }
+
+export type SessionView = ReturnType<AuthService["view"]>;
+
+export type AuthSession = NonNullable<
+  Awaited<ReturnType<AuthService["session"]>>
+>;

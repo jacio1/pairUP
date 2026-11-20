@@ -3,7 +3,7 @@ import { ChatRoom } from "@/components/chat/chat-room";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/hooks";
 import { listingHref } from "@/lib/local-data";
-import { useListingsQuery, useProposalsQuery } from "@/lib/store";
+import { useListingsQuery, useProposalsQuery } from "@/lib/api";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 export function RoomAccess({ roomId }: { roomId: string }) {

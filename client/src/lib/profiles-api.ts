@@ -1,4 +1,4 @@
-import { api } from "./store";
+import { api } from "./api";
 import type { Listing, StudyProfile } from "./local-data";
 export type PublicProfile = StudyProfile & {
   id: number;

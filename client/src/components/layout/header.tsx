@@ -1,7 +1,7 @@
 "use client";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/hooks";
-import { useProposalsQuery } from "@/lib/store";
+import { useProposalsQuery } from "@/lib/api";
 import {
   Bell,
   BookOpen,

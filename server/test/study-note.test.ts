@@ -2,8 +2,8 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import * as Y from "yjs";
 import { HttpException } from "@nestjs/common";
-import { noteState } from "../src/study-note";
-import { StudyToolsController } from "../src/study-tools.controller";
+import { noteState } from "../src/study-tools/study-note";
+import { StudyToolsController } from "../src/study-tools/study-tools.controller";
 
 test("notes converge with concurrent edits and duplicate/reordered updates", () => {
   const base = new Y.Doc();

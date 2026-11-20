@@ -6,7 +6,7 @@ import {
   emptyProfile,
   type ListingDraft,
 } from "@/lib/local-data";
-import { useCreateListingMutation } from "@/lib/store";
+import { useCreateListingMutation } from "@/lib/api";
 import { useTranslations } from "next-intl";
 import { useRouter } from "next/navigation";
 import { useRef, useState, type SubmitEvent } from "react";

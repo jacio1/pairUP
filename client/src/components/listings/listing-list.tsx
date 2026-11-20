@@ -2,7 +2,7 @@
 import { ListingCard } from "@/components/listings/listing-card";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/hooks";
-import { useListingsQuery } from "@/lib/store";
+import { useListingsQuery } from "@/lib/api";
 import { useTranslations } from "next-intl";
 export function ListingList({
   mine = false,

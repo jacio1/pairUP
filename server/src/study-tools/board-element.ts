@@ -1,5 +1,5 @@
-import { validId } from "./core";
-import { toolError } from "./study-note";
+import { fail as toolError } from "../common/api-error";
+import { validId } from "../core";
 export type BoardElement = {
   strokeId?: string;
   id: string;

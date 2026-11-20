@@ -1,5 +1,6 @@
 import type { RoomTimer } from "@prisma/client";
-import { toolError, versionInput } from "./study-note";
+import { fail as toolError } from "../common/api-error";
+import { versionInput } from "./study-note";
 export type TimerInput = {
   version: number;
   action: "start" | "pause" | "reset" | "next" | "configure" | "mode";

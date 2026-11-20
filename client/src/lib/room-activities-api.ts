@@ -1,4 +1,4 @@
-import { api } from "./store";
+import { api } from "./api";
 import { subscribeBoardSnapshots } from "./board-events";
 export type BoardElement = {
   strokeId?: string;

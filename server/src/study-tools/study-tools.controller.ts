@@ -1,4 +1,3 @@
-import { RoomActivities } from "./room-activities";
 import {
   Body,
   Controller,
@@ -10,18 +9,19 @@ import {
   Res,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import type { Realtime } from "./app";
-import type { AuthService } from "./auth/auth.service";
-import { RateLimiter } from "./core";
-import { toolError } from "./study-note";
-import { StudyTools } from "./study-tools";
+import { AuthService } from "../auth/auth.service";
+import { fail as toolError } from "../common/api-error";
+import { RateLimiter } from "../core";
+import { Realtime } from "../realtime/realtime.gateway";
+import { RoomActivities } from "./room-activities.service";
+import { StudyTools } from "./study-tools.service";
 
 @Controller("api/rooms/:roomId/tools")
 export class StudyToolsController {
   private limiter = new RateLimiter();
   constructor(
-    @Inject("STUDY_ACCESS") private auth: AuthService,
-    @Inject("STUDY_REALTIME") private rt: Realtime,
+    @Inject(AuthService) private auth: AuthService,
+    @Inject(Realtime) private rt: Realtime,
     @Inject(StudyTools) private tools: StudyTools,
     @Inject(RoomActivities) private activities: RoomActivities,
   ) {}

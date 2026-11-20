@@ -1,16 +1,13 @@
+import { buildContext } from "../src/ai/ai-context";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import {
-  RateLimiter,
-  buildContext,
-  secretEquals,
-  validId,
-  validText,
-} from "../src/core";
+import { RateLimiter, secretEquals, validId, validText } from "../src/core";
 import { resolveLocale } from "../../client/src/i18n/locale";
 import en from "../../client/messages/en.json";
 import ru from "../../client/messages/ru.json";
-import { createStore, actions, type Message } from "../../client/src/lib/store";
+import { createStore } from "../../client/src/lib/store";
+import { actions } from "../../client/src/lib/chat-state";
+import { type Message } from "../../client/src/lib/chat-types";
 
 test("locale preference: cookie, weighted regional languages, unsupported fallback", () => {
   assert.equal(resolveLocale("ru", "en-US"), "ru");
@@ -62,12 +59,23 @@ test("context isolates instruction and trims older records", () => {
 
 test("latest AI request is not wrapped in internal presenter labels", () => {
   const prompt = "Когда была Вторая мировая война?";
-  const messages = buildContext([
-    { author: "TEST #1", kind: "ai-request", text: "Translate to Russian" },
-    { author: "Neuron", kind: "ai", text: "Представительский инструктаж: wrong answer" },
-  ], prompt, "ru");
+  const messages = buildContext(
+    [
+      { author: "TEST #1", kind: "ai-request", text: "Translate to Russian" },
+      {
+        author: "Neuron",
+        kind: "ai",
+        text: "Представительский инструктаж: wrong answer",
+      },
+    ],
+    prompt,
+    "ru",
+  );
   assert.equal(messages.at(-1)?.content, prompt);
-  assert.match(messages[0].content, /Earlier translation requests do not apply/);
+  assert.match(
+    messages[0].content,
+    /Earlier translation requests do not apply/,
+  );
 });
 test("rate limit boundary and request validation", () => {
   const limit = new RateLimiter();

@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { RoomTimer } from "@prisma/client";
-import { changeTimer } from "../src/room-timer";
-import { boardElement } from "../src/board-element";
+import { changeTimer } from "../src/study-tools/room-timer";
+import { boardElement } from "../src/study-tools/board-element";
 const initial: RoomTimer = {
   roomId: "test",
   mode: "focus",

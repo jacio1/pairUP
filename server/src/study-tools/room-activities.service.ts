@@ -1,15 +1,17 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { fail as toolError } from "../common/api-error";
+import { Database } from "../database/database.service";
 import {
   boardElement,
   removeBoardElement,
   type BoardElement,
 } from "./board-element";
 import { changeTimer, type TimerInput } from "./room-timer";
-import { toolError, versionInput } from "./study-note";
+import { versionInput } from "./study-note";
 @Injectable()
 export class RoomActivities {
-  constructor(@Inject("STUDY_DATABASE") private db: PrismaClient) {}
+  constructor(@Inject(Database) private db: PrismaClient) {}
   async timer(roomId: string) {
     const timer = await this.db.roomTimer.upsert({
       where: { roomId },

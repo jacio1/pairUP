@@ -1,6 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
-import { toolError } from "./study-note";
+import { fail as toolError } from "../common/api-error";
+import { Database } from "../database/database.service";
 
 const publicFields = {
   id: true,
@@ -56,7 +57,7 @@ export function parseProfile(input: unknown) {
 }
 @Injectable()
 export class Profiles {
-  constructor(@Inject("PROFILE_DATABASE") private db: PrismaClient) {}
+  constructor(@Inject(Database) private db: PrismaClient) {}
   ensure(session: { id: number; user: { role: string } }) {
     return this.db.publicProfile.upsert({
       where: { sessionId: session.id },

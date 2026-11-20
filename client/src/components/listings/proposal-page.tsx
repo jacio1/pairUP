@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { listingHref } from "@/lib/local-data";
-import { useProposalsQuery, useRespondMutation } from "@/lib/store";
+import { useProposalsQuery, useRespondMutation } from "@/lib/api";
 import { BookOpen } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import Link from "next/link";

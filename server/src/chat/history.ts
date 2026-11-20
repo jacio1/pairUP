@@ -1,4 +1,4 @@
-import { toolError } from "./study-note";
+import { fail as toolError } from "../common/api-error";
 export const HISTORY_PAGE_SIZE = 50;
 export function historyWindow(after?: number, before?: number) {
   for (const cursor of [after, before])

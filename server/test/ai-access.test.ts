@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { HttpException } from "@nestjs/common";
-import { Api } from "../src/app";
+import { AiController } from "../src/ai/ai.controller";
 
 test("TEST room participants can request Neuron", async () => {
   const session = { id: 17, name: "TEST #17", user: { role: "guest" } };
@@ -27,14 +27,7 @@ test("TEST room participants can request Neuron", async () => {
       return { id: "job-123" };
     },
   };
-  const api = new Api(
-    auth as never,
-    chat as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-  );
+  const api = new AiController(auth as never, chat as never);
   assert.deepEqual(
     await api.ai(
       { headers: { cookie: "test-session" } } as never,
@@ -57,14 +50,7 @@ test("Neuron requests cannot bypass room access", async () => {
       called = true;
     },
   };
-  const api = new Api(
-    auth as never,
-    chat as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-  );
+  const api = new AiController(auth as never, chat as never);
   await assert.rejects(
     () => api.ai({ headers: {} } as never, "private-room", {}),
     (error: unknown) =>

@@ -1,8 +1,9 @@
-import "reflect-metadata";
-import "dotenv/config";
 import { NestFactory } from "@nestjs/core";
+import "dotenv/config";
 import { json } from "express";
+import "reflect-metadata";
 import { AppModule } from "./app";
+import { allowedOrigins } from "./config/origins";
 
 async function main() {
   for (const key of ["DATABASE_URL", "PRESENTER_PASSWORD", "WORKER_SECRET"]) {
@@ -25,9 +26,7 @@ async function main() {
   }
   const app = await NestFactory.create(AppModule, { bodyParser: false });
   app.use(json({ limit: "384kb" }));
-  const origins = (process.env.PUBLIC_ORIGIN || "http://localhost:3000").split(
-    ",",
-  );
+  const origins = allowedOrigins();
   app.enableCors({ origin: origins, credentials: true });
   app.use(
     (

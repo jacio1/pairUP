@@ -1,13 +1,9 @@
 import { sendChatMessage } from "@/lib/chat-transport";
 import { errorCode } from "@/lib/errors";
 import { useAppDispatch, useAppSelector } from "@/lib/hooks";
-import {
-  actions,
-  useAskMutation,
-  useListingsQuery,
-  useResetMutation,
-  type Message,
-} from "@/lib/store";
+import { actions } from "@/lib/chat-state";
+import { useAskMutation, useListingsQuery, useResetMutation } from "@/lib/api";
+import { type Message } from "@/lib/chat-types";
 import { useLocale } from "next-intl";
 import { useRef, useState, type SubmitEvent } from "react";
 export function useChatActions(roomId: string) {

@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { historyWindow, HISTORY_PAGE_SIZE } from "../src/history";
-import { actions, createStore } from "../../client/src/lib/store";
+import { historyWindow, HISTORY_PAGE_SIZE } from "../src/chat/history";
+import { actions } from "../../client/src/lib/chat-state";
+import { createStore } from "../../client/src/lib/store";
 test("history cursors distinguish latest, older and forward catch-up", () => {
   assert.equal(HISTORY_PAGE_SIZE, 50);
   assert.equal(historyWindow().mode, "latest");

@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { useProfileSummaryQuery } from "@/lib/profiles-api";
-import type { Message } from "@/lib/store";
+import type { Message } from "@/lib/chat-types";
 export function MessageProfile({
   message,
   children,

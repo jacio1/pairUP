@@ -2,7 +2,7 @@
 import { useAuth } from "@/components/auth/auth-context";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/hooks";
-import { useMeQuery } from "@/lib/store";
+import { useMeQuery } from "@/lib/api";
 import { LockKeyhole } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { type ReactNode } from "react";

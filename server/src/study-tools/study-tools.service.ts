@@ -1,11 +1,13 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
-import { validId } from "./core";
-import { noteState, toolError, versionInput } from "./study-note";
+import { fail as toolError } from "../common/api-error";
+import { validId } from "../core";
+import { Database } from "../database/database.service";
+import { noteState, versionInput } from "./study-note";
 
 @Injectable()
 export class StudyTools {
-  constructor(@Inject("STUDY_DATABASE") private db: PrismaClient) {}
+  constructor(@Inject(Database) private db: PrismaClient) {}
   snapshot(roomId: string) {
     return this.db.$transaction(async (tx) => ({
       notes: await tx.studyNote.findMany({

@@ -148,7 +148,7 @@
     "askNeuron": "Ask Neuron",
     "thinking": "Neuron is thinking",
     "tryAgain": "Try again",
-    "onlyHost": "Your AI study companion",
+    "neuronHint": "Your AI study companion",
     "selectedMessage": "Selected message",
     "recentConversation": "Recent conversation",
     "cancelNeuron": "Cancel Neuron mode",
@@ -161,8 +161,7 @@
     "aboutRoom": "A shared learning space",
     "clearConfirm": "This removes all messages for everyone and cancels current AI requests. This action cannot be undone.",
     "cancel": "Cancel",
-    "englishGoal": "Practice conversational English together.",
-    "neuronHostOnly": "Only the host can call Neuron"
+    "englishGoal": "Practice conversational English together."
   },
   "Errors": {
     "RATE_LIMIT": "A little too fast. Please wait a moment.",

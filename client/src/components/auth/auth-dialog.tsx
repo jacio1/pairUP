@@ -9,7 +9,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAppDispatch } from "@/lib/hooks";
-import { actions, api, useLoginMutation } from "@/lib/store";
+import { actions } from "@/lib/chat-state";
+import { api, useLoginMutation } from "@/lib/api";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useState } from "react";

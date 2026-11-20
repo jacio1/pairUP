@@ -9,7 +9,7 @@ import {
   useListingsQuery,
   useProposalsQuery,
   useProposeMutation,
-} from "@/lib/store";
+} from "@/lib/api";
 import { Clock3, MapPin, Target } from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";

@@ -1,7 +1,7 @@
 import "reflect-metadata";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { Api } from "../src/app";
+import { VoiceController } from "../src/voice/voice.controller";
 import { HttpException } from "@nestjs/common";
 
 test("voice endpoint checks room access before issuing any token", async () => {
@@ -16,14 +16,7 @@ test("voice endpoint checks room access before issuing any token", async () => {
       issued = true;
     },
   };
-  const api = new Api(
-    auth as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    voice as never,
-    {} as never,
-  );
+  const api = new VoiceController(auth as never, voice as never);
   await assert.rejects(
     () => api.voiceToken({ headers: {} } as never, {} as never, "private-room"),
     (error: unknown) =>

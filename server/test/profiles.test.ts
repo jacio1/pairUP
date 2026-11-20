@@ -1,8 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { HttpException } from "@nestjs/common";
-import { parseProfile } from "../src/profiles";
-import { ProfilesController } from "../src/profiles.controller";
+import { parseProfile } from "../src/profiles/profiles.service";
+import { ProfilesController } from "../src/profiles/profiles.controller";
 const input = {
   name: "  Alice  ",
   bio: "Student",

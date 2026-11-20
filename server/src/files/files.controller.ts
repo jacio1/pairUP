@@ -22,23 +22,23 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Request, Response } from "express";
-import type { Realtime } from "./app";
-import type { AuthService } from "./auth/auth.service";
-import { Files } from "./files";
+import { stat } from "node:fs/promises";
+import { AuthService } from "../auth/auth.service";
+import { fail as toolError } from "../common/api-error";
+import { RateLimiter } from "../core";
+import { Realtime } from "../realtime/realtime.gateway";
 import {
   attachmentPath,
   attachmentStorage,
   MAX_FILE_SIZE,
 } from "./file-storage";
-import { RateLimiter } from "./core";
-import { toolError } from "./study-note";
-import { stat } from "node:fs/promises";
+import { Files } from "./files.service";
 
 type FileRequest = Request & { fileSession: { id: number; name: string } };
 @Injectable()
 export class FileRoomGuard implements CanActivate {
   private limiter = new RateLimiter();
-  constructor(@Inject("FILES_ACCESS") private auth: AuthService) {}
+  constructor(@Inject(AuthService) private auth: AuthService) {}
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest<FileRequest>();
     const session = await this.auth.roomAccess(
@@ -81,7 +81,7 @@ export class FileErrorFilter implements ExceptionFilter {
 export class FilesController {
   constructor(
     @Inject(Files) private files: Files,
-    @Inject("FILES_REALTIME") private rt: Realtime,
+    @Inject(Realtime) private rt: Realtime,
   ) {}
   @Get() list(
     @Param("roomId") roomId: string,

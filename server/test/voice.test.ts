@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { TokenVerifier } from "livekit-server-sdk";
-import { VoiceService } from "../src/voice";
+import { VoiceService } from "../src/voice/voice.service";
 import { HttpException } from "@nestjs/common";
 
 test("voice tokens are short-lived, room-scoped and microphone-only", async () => {

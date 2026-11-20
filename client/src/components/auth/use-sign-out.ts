@@ -2,7 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAppDispatch } from "@/lib/hooks";
-import { actions, api, useLogoutMutation } from "@/lib/store";
+import { actions } from "@/lib/chat-state";
+import { api, useLogoutMutation } from "@/lib/api";
 export function useSignOut() {
   const dispatch = useAppDispatch(),
     router = useRouter();

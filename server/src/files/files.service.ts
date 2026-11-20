@@ -1,8 +1,9 @@
-import { messageAuthor, profileAuthor } from "./profiles";
 import { Inject, Injectable } from "@nestjs/common";
 import { PrismaClient } from "@prisma/client";
-import { validId } from "./core";
-import { toolError } from "./study-note";
+import { fail as toolError } from "../common/api-error";
+import { validId } from "../core";
+import { Database } from "../database/database.service";
+import { messageAuthor, profileAuthor } from "../profiles/profiles.service";
 import { inspectFile, removeStoredFile, safeFilename } from "./file-storage";
 export const attachmentFields = {
   id: true,
@@ -17,7 +18,7 @@ export const attachmentFields = {
 } as const;
 @Injectable()
 export class Files {
-  constructor(@Inject("FILES_DATABASE") private db: PrismaClient) {}
+  constructor(@Inject(Database) private db: PrismaClient) {}
   list(roomId: string) {
     return this.db.attachment.findMany({
       where: { roomId },
