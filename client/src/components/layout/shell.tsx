@@ -7,6 +7,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const path = usePathname();
   const protectedRoute =
     path !== "/" &&
+    path !== "/news" &&
     !path.startsWith("/listings/") &&
     !path.startsWith("/users/") &&
     path !== "/settings";

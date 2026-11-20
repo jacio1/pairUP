@@ -20,6 +20,7 @@ export function useListingForm() {
   const session = useAppSelector((state) => state.chat.session);
   const [profile] = useBrowserStorage("pairup.study-profile", emptyProfile);
   const [draft, setDraft] = useState<ListingDraft>(emptyListing);
+  const [files, setFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [serverError, setServerError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -75,12 +76,16 @@ export function useListingForm() {
       if (!session) throw { data: { code: "UNAUTHORIZED" } };
       const currentSession = session;
       requestId.current ??= crypto.randomUUID();
-      const listing = await createListing({
+      const input = {
         ...draft,
         id: requestId.current,
         location: needsLocation ? draft.location : "",
         authorName: profile.name.trim().slice(0, 60) || currentSession.name,
-      }).unwrap();
+      };
+      const data = new FormData();
+      data.set("listing", JSON.stringify(input));
+      files.forEach((file) => data.append("files", file));
+      const listing = await createListing(files.length ? data : input).unwrap();
       router.push(`/my-listings?published=${listing.id}`);
     } catch (error) {
       setServerError(errorCode(error));
@@ -95,6 +100,8 @@ export function useListingForm() {
   }
   return {
     draft,
+    files,
+    setFiles,
     errors,
     serverError,
     submitting,

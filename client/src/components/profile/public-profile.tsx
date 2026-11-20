@@ -6,9 +6,11 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { ProfileHeader } from "./profile-header";
 import { ProfileAbout } from "./profile-about";
+import { SocialFeed } from "@/components/listings/social-feed";
 import { ProfileListings } from "./profile-listings";
 export function PublicProfilePage({ id }: { id: string }) {
   const t = useTranslations("SocialProfile");
+  const social = useTranslations("Social");
   const session = useAppSelector((state) => state.chat.session);
   const { data: mine } = useMyProfileQuery(undefined, { skip: !session });
   const {
@@ -56,7 +58,11 @@ export function PublicProfilePage({ id }: { id: string }) {
       />
       <div className="grid items-start gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
         <ProfileAbout profile={profile} />
-        <ProfileListings listings={profile.listings} />
+        <div className="min-w-0 space-y-6">
+          <ProfileListings listings={profile.listings} />
+          <h2 className="text-xl font-bold tracking-tight">{social("news")}</h2>
+          <SocialFeed author={profile.id} />
+        </div>
       </div>
     </main>
   );

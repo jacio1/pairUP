@@ -1,4 +1,5 @@
 "use client";
+import { ListingAttachments } from "./social-feed";
 import { useAuth } from "@/components/auth/auth-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,7 @@ export function ListingDetails({ id }: { id: string }) {
         <p className="whitespace-pre-wrap leading-7 wrap-anywhere">
           {listing.description}
         </p>
+        <ListingAttachments key={listing.id} id={listing.id} />
         {listing.schedule && (
           <p className="flex gap-2 text-sm">
             <Clock3 className="size-4" />

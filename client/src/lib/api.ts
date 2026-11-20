@@ -5,7 +5,7 @@ import type { Proposal, Session, Snapshot, AiStatus } from "./chat-types";
 export const api = createApi({
   reducerPath: "api",
   baseQuery: fetchBaseQuery({ baseUrl: "/api", credentials: "include" }),
-  tagTypes: ["Listings", "Proposals"],
+  tagTypes: ["Listings", "Proposals", "Social", "SocialComments"],
   endpoints: (builder) => ({
     proposals: builder.query<Proposal[], void>({
       query: () => "/proposals",
@@ -33,9 +33,9 @@ export const api = createApi({
       query: (sessionId) => (sessionId ? "/listings?mine=true" : "/listings"),
       providesTags: ["Listings"],
     }),
-    createListing: builder.mutation<Listing, CreateListingInput>({
+    createListing: builder.mutation<Listing, CreateListingInput | FormData>({
       query: (body) => ({ url: "/listings", method: "POST", body }),
-      invalidatesTags: ["Listings"],
+      invalidatesTags: ["Listings", "Social"],
     }),
     me: builder.query<Session | null, void>({ query: () => "/me" }),
     login: builder.mutation<Session, { password?: string }>({

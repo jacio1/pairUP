@@ -7,6 +7,7 @@ import {
   BookOpen,
   Infinity as InfinityIcon,
   MessageCircle,
+  Newspaper,
   PlusCircle,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -16,6 +17,7 @@ import { UserMenu } from "./user-menu";
 export function Header() {
   const t = useTranslations("Demo");
   const p = useTranslations("Product");
+  const social = useTranslations("Social");
   const session = useAppSelector((s) => s.chat.session);
   const path = usePathname();
   const { data: proposals = [] } = useProposalsQuery(undefined, {
@@ -49,6 +51,15 @@ export function Header() {
             render={<Link href="/" />}
           >
             {t("discover")}
+          </Button>
+          <Button
+            variant={active("/news") ? "secondary" : "ghost"}
+            nativeButton={false}
+            render={<Link href="/news" />}
+            aria-current={active("/news") ? "page" : undefined}
+          >
+            <Newspaper className="size-4" />
+            {social("news")}
           </Button>
           <Button
             variant={active("/sessions") ? "secondary" : "ghost"}

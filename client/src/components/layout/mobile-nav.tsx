@@ -1,10 +1,18 @@
 "use client";
-import { Bell, Compass, MessageCircle, PlusCircle, Users } from "lucide-react";
+import {
+  Bell,
+  Compass,
+  MessageCircle,
+  Newspaper,
+  PlusCircle,
+  Users,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 const navigation = [
   { href: "/", key: "discover", icon: Compass },
+  { href: "/news", key: "news", icon: Newspaper },
   { href: "/create", key: "create", icon: PlusCircle },
   { href: "/messages", key: "messages", icon: MessageCircle },
   { href: "/notifications", key: "notifications", icon: Bell },
@@ -13,11 +21,14 @@ const navigation = [
 export function MobileNav() {
   const t = useTranslations("Demo");
   const p = useTranslations("Product");
+  const social = useTranslations("Social");
   const path = usePathname();
   const active = (href: string) =>
     href === "/" ? path === "/" : path.startsWith(href);
-  const label = (key: string) =>
-    key === "create" || key === "notifications" ? p(key) : t(key);
+  function label(key: string) {
+    if (key === "news") return social("news");
+    return key === "create" || key === "notifications" ? p(key) : t(key);
+  }
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 flex justify-around border-t border-border bg-card/95 px-2 pb-[max(10px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl min-[761px]:hidden"

@@ -27,6 +27,9 @@ model Session {
 }
 
 model PublicProfile {
+  socialPosts SocialPost[]
+  socialReactions SocialReaction[]
+  socialComments SocialComment[]
   id           Int      @id @default(autoincrement())
   sessionId    Int?     @unique
   session      Session? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
@@ -45,6 +48,7 @@ model PublicProfile {
 }
 
 model Listing {
+  socialPost SocialPost?
   id             String   @id
   publicId       Int      @unique @default(autoincrement())
   roomId         String   @unique
@@ -199,4 +203,55 @@ model AiJob {
   updatedAt       DateTime @updatedAt
 
   @@index([roomId, createdAt])
+}
+
+model SocialPost {
+  id        String           @id @default(uuid())
+  listingId String?          @unique
+  listing   Listing?         @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  authorId  Int?
+  author    PublicProfile?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  text      String           @default("")
+  createdAt DateTime         @default(now())
+  media     SocialMedia[]
+  reactions SocialReaction[]
+  comments  SocialComment[]
+
+  @@index([listingId, createdAt])
+  @@index([authorId, createdAt])
+}
+
+model SocialMedia {
+  id       String     @id
+  postId   String
+  post     SocialPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  name     String
+  kind     String
+  mime     String
+  position Int
+
+  @@index([postId, position])
+}
+
+model SocialReaction {
+  postId    String
+  post      SocialPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  profileId Int
+  profile   PublicProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  emoji     String
+
+  @@id([postId, profileId, emoji])
+  @@index([profileId, emoji])
+}
+
+model SocialComment {
+  id        String        @id @default(uuid())
+  postId    String
+  post      SocialPost    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    PublicProfile @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  text      String
+  createdAt DateTime      @default(now())
+
+  @@index([postId, createdAt])
 }

@@ -34,6 +34,11 @@ export class Database
       create: { id: "demo-listing", roomId: "listing-english-practice" },
       update: { roomId: "listing-english-practice" },
     });
+    await this.socialPost.upsert({
+      where: { listingId: "demo-listing" },
+      create: { id: "listing-demo-listing", listingId: "demo-listing" },
+      update: {},
+    });
     const englishAuthor = await this.publicProfile.upsert({
       where: { seedKey: "english-author" },
       create: { seedKey: "english-author", name: "EnglishVUZ" },

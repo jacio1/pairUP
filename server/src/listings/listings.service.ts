@@ -6,6 +6,9 @@ import { RateLimiter } from "../core";
 import { Database } from "../database/database.service";
 import { profileAuthor, Profiles } from "../profiles/profiles.service";
 import { parseListing } from "./listing.validation";
+const listingSocial = {
+  include: { media: { orderBy: { position: "asc" as const } } },
+};
 @Injectable()
 export class ListingsService {
   private listingLimiter = new RateLimiter();
@@ -23,11 +26,22 @@ export class ListingsService {
       take: 100,
     });
   }
-  async createListing(session: AuthSession, body: unknown) {
+  async createListing(
+    session: AuthSession,
+    body: unknown,
+    media: {
+      id: string;
+      name: string;
+      mime: string;
+      kind: string;
+      position: number;
+    }[] = [],
+  ) {
     const listing = parseListing(body);
     if (!listing) return fail("INVALID_INPUT");
     const existing = await this.db.listing.findUnique({
       where: { id: listing.id },
+      include: { socialPost: listingSocial },
     });
     if (existing) {
       if (existing.ownerSessionId !== session.id) return fail("FORBIDDEN", 403);
@@ -39,8 +53,12 @@ export class ListingsService {
     const profile = await this.profiles.ensure(session);
     try {
       created = await this.db.listing.create({
+        include: { socialPost: listingSocial },
         data: {
           ...listing,
+          socialPost: {
+            create: { id: `listing-${listing.id}`, media: { create: media } },
+          },
           authorName: profile.name,
           authorProfile: { connect: { id: profile.id } },
           owner: { connect: { id: session.id } },
@@ -56,6 +74,7 @@ export class ListingsService {
         throw error;
       created = await this.db.listing.findUniqueOrThrow({
         where: { id: listing.id },
+        include: { socialPost: listingSocial },
       });
     }
     if (created.ownerSessionId !== session.id) return fail("FORBIDDEN", 403);

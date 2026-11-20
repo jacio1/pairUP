@@ -7,6 +7,7 @@ import { SignOutButton } from "@/components/auth/sign-out-button";
 import { ProfileEditDialog } from "./profile-edit-dialog";
 import { ProfileMenu } from "./profile-menu";
 import { ProfileHeader } from "./profile-header";
+import { ProfileSocial } from "./profile-social";
 import { ProfileAbout } from "./profile-about";
 import { useProfileForm } from "./use-profile-form";
 export function Profile() {
@@ -59,7 +60,10 @@ export function Profile() {
         </p>
       )}
       <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_280px]">
-        <ProfileAbout profile={profile} />
+        <div className="min-w-0 space-y-6">
+          <ProfileAbout profile={profile} />
+          <ProfileSocial id={profile.id} />
+        </div>
         <aside className="min-w-0 space-y-5">
           <ProfileMenu />
           <SignOutButton />

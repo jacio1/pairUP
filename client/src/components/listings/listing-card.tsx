@@ -1,4 +1,6 @@
 "use client";
+import { useSocialFeedQuery } from "@/lib/social-api";
+import { SocialMediaGallery } from "./social-media";
 import { useAuth } from "@/components/auth/auth-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,6 +46,11 @@ export function ListingCard({
   const open = useAuth();
   const router = useRouter();
   const session = useAppSelector((s) => s.chat.session);
+  const { post } = useSocialFeedQuery("listings=true", {
+    selectFromResult: ({ data }) => ({
+      post: data?.find((post) => post.listing?.id === listing.id),
+    }),
+  });
   const english = listing.id === "demo-listing";
   const tone =
     subjectTones[listing.subject] ||
@@ -127,6 +134,11 @@ export function ListingCard({
             </div>
           )}
         </div>
+        {post && post.media.length > 0 && (
+          <div className="mt-4 space-y-3">
+            <SocialMediaGallery files={post.media} />
+          </div>
+        )}
         <div className="shrink-0 pt-3">
           <div className="flex items-center justify-between gap-2 border-t pt-3">
             <ListingAuthor listing={listing} />

@@ -35,7 +35,7 @@ async function main() {
       next: () => void,
     ) => {
       if (
-        req.method === "POST" &&
+        !["GET", "HEAD", "OPTIONS"].includes(req.method) &&
         req.headers.origin &&
         !origins.includes(req.headers.origin)
       )

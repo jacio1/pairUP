@@ -7,6 +7,7 @@ import { ListingBasicsSection } from "./listing-basics-section";
 import { ListingPreview } from "./listing-preview";
 import { PartnerSection } from "./partner-section";
 import { SessionDetailsSection } from "./session-details-section";
+import { AttachmentInput } from "./social-media";
 import { useListingForm } from "./use-listing-form";
 import { PageHeading } from "@/components/layout/page-heading";
 export function CreateListing() {
@@ -27,6 +28,9 @@ export function CreateListing() {
             <ListingBasicsSection form={form} />
             <SessionDetailsSection form={form} />
             <PartnerSection form={form} />
+            <div className="rounded-2xl border bg-card p-5">
+              <AttachmentInput files={form.files} onChange={form.setFiles} />
+            </div>
           </fieldset>
           {serverError && (
             <Alert variant="destructive">
