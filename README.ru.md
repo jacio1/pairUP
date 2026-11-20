@@ -139,6 +139,10 @@ npm run build --prefix server
 npm test --prefix server
 ```
 
+Авторизацию можно проверить отдельно командой `npm run test:auth --prefix server`.
+Для неё нужно задать `TEST_DATABASE_URL` на отдельную PostgreSQL-базу с `test` в имени.
+Проверка создаёт собственное объявление и сессии, проверяет HTTP и Socket.IO и удаляет только свои данные.
+
 Для браузерных проверок нужны работающие локальные frontend, backend, база данных и Microsoft Edge:
 
 ```powershell
@@ -159,6 +163,8 @@ npm run test:activities --prefix tools
 | --- | --- |
 | [`client/`](client/) | Frontend с организацией по функциям продукта, переиспользуемыми UI-компонентами, локализацией и управлением состоянием. |
 | [`server/`](server/) | NestJS API, проверка доступа к комнатам, события реального времени, хранение данных и миграции БД. |
+| [`server/src/auth/`](server/src/auth/) | Модуль авторизации: HTTP-контроллер, cookie-сессии, права доступа и событие выхода для отключения сокетов. |
+| [`server/src/database/`](server/src/database/) | Общий модуль Prisma с подключением к PostgreSQL и жизненным циклом соединения. |
 | [`worker/`](worker/) | Локальный AI-worker, связывающий backend с Ollama. |
 | [`tools/`](tools/) | Браузерные интеграционные проверки и вспомогательные утилиты. |
 | [`deploy/`](deploy/) | Документация по хостингу, HTTPS, голосовым комнатам, файлам и совместным инструментам. |

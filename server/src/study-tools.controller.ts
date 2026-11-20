@@ -10,7 +10,8 @@ import {
   Res,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import type { Auth, Realtime } from "./app";
+import type { Realtime } from "./app";
+import type { AuthService } from "./auth/auth.service";
 import { RateLimiter } from "./core";
 import { toolError } from "./study-note";
 import { StudyTools } from "./study-tools";
@@ -19,7 +20,7 @@ import { StudyTools } from "./study-tools";
 export class StudyToolsController {
   private limiter = new RateLimiter();
   constructor(
-    @Inject("STUDY_ACCESS") private auth: Auth,
+    @Inject("STUDY_ACCESS") private auth: AuthService,
     @Inject("STUDY_REALTIME") private rt: Realtime,
     @Inject(StudyTools) private tools: StudyTools,
     @Inject(RoomActivities) private activities: RoomActivities,

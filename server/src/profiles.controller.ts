@@ -9,7 +9,7 @@ import {
   Res,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import type { Auth } from "./app";
+import type { AuthService } from "./auth/auth.service";
 import { Profiles } from "./profiles";
 import { RateLimiter } from "./core";
 import { toolError } from "./study-note";
@@ -17,7 +17,7 @@ import { toolError } from "./study-note";
 export class ProfilesController {
   private limiter = new RateLimiter();
   constructor(
-    @Inject("PROFILE_ACCESS") private auth: Auth,
+    @Inject("PROFILE_ACCESS") private auth: AuthService,
     @Inject(Profiles) private profiles: Profiles,
   ) {}
   @Get("profiles/:id/summary") async summary(

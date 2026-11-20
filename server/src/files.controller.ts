@@ -22,7 +22,8 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Request, Response } from "express";
-import type { Auth, Realtime } from "./app";
+import type { Realtime } from "./app";
+import type { AuthService } from "./auth/auth.service";
 import { Files } from "./files";
 import {
   attachmentPath,
@@ -37,7 +38,7 @@ type FileRequest = Request & { fileSession: { id: number; name: string } };
 @Injectable()
 export class FileRoomGuard implements CanActivate {
   private limiter = new RateLimiter();
-  constructor(@Inject("FILES_ACCESS") private auth: Auth) {}
+  constructor(@Inject("FILES_ACCESS") private auth: AuthService) {}
   async canActivate(context: ExecutionContext) {
     const req = context.switchToHttp().getRequest<FileRequest>();
     const session = await this.auth.roomAccess(

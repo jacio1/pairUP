@@ -26,7 +26,8 @@ execFileSync(
 
 test("sessions, realtime delivery, context, AI fallback, reset and recovery", async (t) => {
   const { NestFactory } = await import("@nestjs/core");
-  const { AppModule, Database } = await import("../src/app");
+  const { AppModule } = await import("../src/app");
+  const { Database } = await import("../src/database/database.service");
   let app = await NestFactory.create(AppModule, { logger: false });
   await app.listen(0, "127.0.0.1");
   let base = await app.getUrl();

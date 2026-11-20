@@ -1,3 +1,8 @@
+import { Database } from "./database/database.service";
+import { DatabaseModule } from "./database/database.module";
+import { AuthService } from "./auth/auth.service";
+import { AuthModule } from "./auth/auth.module";
+import { AuthSessionEvents } from "./auth/auth-session.events";
 import { RoomActivities } from "./room-activities";
 import { historyWindow, HISTORY_PAGE_SIZE } from "./history";
 import {
@@ -22,10 +27,8 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from "@nestjs/websockets";
-import { PrismaClient, Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { Server, Socket } from "socket.io";
-import { parse, serialize } from "cookie";
-import { randomBytes } from "node:crypto";
 import type { Request, Response } from "express";
 import { parseListing } from "./listings";
 import { VoiceService } from "./voice";
@@ -37,7 +40,6 @@ import { Files, attachmentFields } from "./files";
 import { FilesController, FileRoomGuard } from "./files.controller";
 import {
   ROOM,
-  hash,
   secretEquals,
   validId,
   validText,
@@ -48,161 +50,20 @@ import {
 const fail = (code: string, status = 400): never => {
   throw new HttpException({ code }, status);
 };
-const sessionCookie = "PAIRUP_SESSION";
 const allowedOrigins = () =>
   (process.env.PUBLIC_ORIGIN || "http://localhost:3000").split(",");
-
-@Injectable()
-export class Database
-  extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
-{
-  async onModuleInit() {
-    await this.$connect();
-    await this.user.upsert({
-      where: { id: "test" },
-      create: { id: "test", role: "guest" },
-      update: {},
-    });
-    await this.user.upsert({
-      where: { id: "presenter" },
-      create: { id: "presenter", role: "presenter" },
-      update: {},
-    });
-    await this.room.upsert({
-      where: { id: ROOM },
-      create: { id: ROOM },
-      update: {},
-    });
-    await this.room.upsert({
-      where: { id: "listing-english-practice" },
-      create: { id: "listing-english-practice" },
-      update: {},
-    });
-    await this.listing.upsert({
-      where: { id: "demo-listing" },
-      create: { id: "demo-listing", roomId: "listing-english-practice" },
-      update: { roomId: "listing-english-practice" },
-    });
-    const englishAuthor = await this.publicProfile.upsert({
-      where: { seedKey: "english-author" },
-      create: { seedKey: "english-author", name: "EnglishVUZ" },
-      update: { name: "EnglishVUZ" },
-    });
-    await this.listing.updateMany({
-      where: { id: "demo-listing" },
-      data: {
-        authorName: "EnglishVUZ",
-        authorProfileId: englishAuthor.id,
-        title: "English",
-        subject: "english",
-        level: "intermediate",
-        goal: "Build confidence speaking English",
-        description: "English",
-        schedule: "",
-      },
-    });
-    await this.aiJob.updateMany({
-      where: { status: { in: ["pending", "running"] } },
-      data: { status: "failed", error: "AI_INTERRUPTED" },
-    });
-  }
-  async onModuleDestroy() {
-    await this.$disconnect();
-  }
-}
-
-@Injectable()
-export class Auth {
-  limiter = new RateLimiter();
-  constructor(@Inject(Database) private db: Database) {}
-  async session(cookie?: string) {
-    const token = parse(cookie || "")[sessionCookie];
-    if (!token || token.length > 100) return null;
-    const session = await this.db.session.findUnique({
-      where: { tokenHash: hash(token) },
-      include: { user: true },
-    });
-    return session && session.expiresAt > new Date() ? session : null;
-  }
-  async require(cookie?: string, presenter = false) {
-    const session = await this.session(cookie);
-    if (!session) return fail("UNAUTHORIZED", 401);
-    if (presenter && session.user.role !== "presenter")
-      return fail("FORBIDDEN", 403);
-    return session;
-  }
-  view(session: NonNullable<Awaited<ReturnType<Auth["session"]>>>) {
-    return {
-      id: session.id,
-      role: session.user.role,
-      name:
-        session.user.role === "presenter" ? "Presenter" : `TEST #${session.id}`,
-    };
-  }
-  async roomAccess(cookie: string | undefined, roomId: string) {
-    const session = await this.require(cookie);
-    const listing = await this.db.listing.findUnique({ where: { roomId } });
-    if (!listing) return fail("NOT_FOUND", 404);
-    if (listing.id === "demo-listing") return session;
-    const owner =
-      listing.ownerSessionId === session.id ||
-      (listing.id === "demo-listing" && session.user.role === "presenter");
-    const accepted = await this.db.sessionProposal.findFirst({
-      where: {
-        listingId: listing.id,
-        senderId: session.id,
-        status: "accepted",
-      },
-    });
-    if (!owner && !accepted) return fail("FORBIDDEN", 403);
-    return session;
-  }
-  async login(
-    req: Request,
-    res: Response,
-    presenter: boolean,
-    password?: unknown,
-  ) {
-    if (!this.limiter.allow(`login:${req.ip}`, presenter ? 10 : 100, 60000))
-      return fail("RATE_LIMIT", 429);
-    if (
-      presenter &&
-      (typeof password !== "string" ||
-        !secretEquals(password, process.env.PRESENTER_PASSWORD!))
-    )
-      return fail("INVALID_PASSWORD", 401);
-    const existing = await this.session(req.headers.cookie);
-    if (existing && (!presenter || existing.user.role === "presenter"))
-      return this.view(existing);
-    const token = randomBytes(32).toString("hex");
-    const session = await this.db.session.create({
-      data: {
-        tokenHash: hash(token),
-        userId: presenter ? "presenter" : "test",
-        expiresAt: new Date(Date.now() + 7 * 86400000),
-      },
-      include: { user: true },
-    });
-    res.setHeader(
-      "Set-Cookie",
-      serialize(sessionCookie, token, {
-        httpOnly: true,
-        secure: process.env.COOKIE_SECURE === "true",
-        sameSite: "lax",
-        path: "/",
-        maxAge: 7 * 86400,
-      }),
-    );
-    return this.view(session);
-  }
-}
 
 @WebSocketGateway({
   maxHttpBufferSize: 16384,
   cors: { origin: allowedOrigins(), credentials: true },
 })
-export class Realtime implements OnGatewayConnection, OnGatewayDisconnect {
+export class Realtime
+  implements
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    OnModuleInit,
+    OnModuleDestroy
+{
   @WebSocketServer() server!: Server;
   private worker?: Socket;
   private pending = new Map<
@@ -215,7 +76,19 @@ export class Realtime implements OnGatewayConnection, OnGatewayDisconnect {
     }
   >();
   onMessage?: (socket: Socket, payload: unknown) => Promise<unknown>;
-  constructor(@Inject(Auth) private auth: Auth) {}
+  private stopSessionListener?: () => void;
+  constructor(
+    @Inject(AuthService) private auth: AuthService,
+    @Inject(AuthSessionEvents) private sessionEvents: AuthSessionEvents,
+  ) {}
+  onModuleInit() {
+    this.stopSessionListener = this.sessionEvents.onRevoked((id) => {
+      this.server.in(`user:${id}`).disconnectSockets(true);
+    });
+  }
+  onModuleDestroy() {
+    this.stopSessionListener?.();
+  }
   async handleConnection(socket: Socket) {
     try {
       const origin = socket.handshake.headers.origin;
@@ -338,7 +211,7 @@ export class Chat implements OnModuleInit {
   private activeJobs = new Map<string, AbortController>();
   constructor(
     @Inject(Database) private db: Database,
-    @Inject(Auth) private auth: Auth,
+    @Inject(AuthService) private auth: AuthService,
     @Inject(Realtime) private rt: Realtime,
   ) {}
   onModuleInit() {
@@ -736,7 +609,7 @@ export class Api {
   private listingLimiter = new RateLimiter();
   private voiceLimiter = new RateLimiter();
   constructor(
-    @Inject(Auth) private auth: Auth,
+    @Inject(AuthService) private auth: AuthService,
     @Inject(Chat) private chat: Chat,
     @Inject(Database) private db: Database,
     @Inject(Realtime) private rt: Realtime,
@@ -746,23 +619,6 @@ export class Api {
   @Get("health") async health() {
     await this.db.$queryRaw`SELECT 1`;
     return { ok: true };
-  }
-  @Post("auth/demo") demo(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    return this.auth.login(req, res, false);
-  }
-  @Post("auth/presenter") presenter(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-    @Body() body: { password?: unknown },
-  ) {
-    return this.auth.login(req, res, true, body?.password);
-  }
-  @Get("me") async me(@Req() req: Request) {
-    const session = await this.auth.session(req.headers.cookie);
-    return session ? this.auth.view(session) : null;
   }
   @Get("listings") async listings(
     @Req() req: Request,
@@ -820,30 +676,6 @@ export class Api {
     }
     if (created.ownerSessionId !== session.id) return fail("FORBIDDEN", 403);
     return created;
-  }
-  @Post("auth/logout") async logout(
-    @Req() req: Request,
-    @Res({ passthrough: true }) res: Response,
-  ) {
-    const session = await this.auth.session(req.headers.cookie);
-    if (session) {
-      await this.db.session.update({
-        where: { id: session.id },
-        data: { expiresAt: new Date() },
-      });
-      this.rt.server.in(`user:${session.id}`).disconnectSockets(true);
-    }
-    res.setHeader(
-      "Set-Cookie",
-      serialize(sessionCookie, "", {
-        httpOnly: true,
-        path: "/",
-        maxAge: 0,
-        sameSite: "lax",
-        secure: process.env.COOKIE_SECURE === "true",
-      }),
-    );
-    return { ok: true };
   }
   @Get("proposals") async proposals(@Req() req: Request) {
     const session = await this.auth.require(req.headers.cookie);
@@ -979,10 +811,9 @@ export class Api {
 }
 
 @Module({
+  imports: [DatabaseModule, AuthModule],
   controllers: [Api, StudyToolsController, ProfilesController, FilesController],
   providers: [
-    Database,
-    Auth,
     Realtime,
     Chat,
     VoiceService,
@@ -992,12 +823,12 @@ export class Api {
     Files,
     FileRoomGuard,
     { provide: "FILES_DATABASE", useExisting: Database },
-    { provide: "FILES_ACCESS", useExisting: Auth },
+    { provide: "FILES_ACCESS", useExisting: AuthService },
     { provide: "FILES_REALTIME", useExisting: Realtime },
     { provide: "PROFILE_DATABASE", useExisting: Database },
-    { provide: "PROFILE_ACCESS", useExisting: Auth },
+    { provide: "PROFILE_ACCESS", useExisting: AuthService },
     { provide: "STUDY_DATABASE", useExisting: Database },
-    { provide: "STUDY_ACCESS", useExisting: Auth },
+    { provide: "STUDY_ACCESS", useExisting: AuthService },
     { provide: "STUDY_REALTIME", useExisting: Realtime },
   ],
 })
