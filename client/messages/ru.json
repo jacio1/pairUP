@@ -51,6 +51,17 @@
     "discard": "Убрать несохранённые рисунки"
   },
   "ChatExtras": {
+    "messageActions": "Действия с сообщением",
+    "reply": "Ответить",
+    "replyingTo": "Ответ для {author}",
+    "cancelReply": "Отменить ответ",
+    "deleteMessage": "Удалить сообщение",
+    "deleteConfirm": "Сообщение будет удалено у всех участников чата.",
+    "cancelDelete": "Отмена",
+    "jumpToMessage": "Перейти к исходному сообщению: {text}",
+    "backToReply": "Вернуться к ответу",
+    "latestMessage": "К последнему сообщению",
+    "messageUnavailable": "Исходное сообщение недоступно",
     "viewProfile": "Профиль: {name}",
     "profilePreview": "Напарник по учёбе",
     "fullProfile": "Открыть профиль",

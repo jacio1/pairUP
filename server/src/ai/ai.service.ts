@@ -52,7 +52,11 @@ export class AiService {
         return fail("AI_BUSY", 429);
       const target = data.targetMessageId
         ? await tx.message.findFirst({
-            where: { id: data.targetMessageId as string, roomId: roomId },
+            where: {
+              id: data.targetMessageId as string,
+              roomId: roomId,
+              kind: { not: "deleted" },
+            },
           })
         : null;
       if (data.targetMessageId && !target)

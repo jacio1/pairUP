@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAppDispatch } from "@/lib/hooks";
 import { actions } from "@/lib/chat-state";
-import { ArrowUp, Paperclip, WifiOff } from "lucide-react";
+import { ArrowUp, Paperclip, Reply, WifiOff, X } from "lucide-react";
 import { NeuronMascot } from "@/components/neuron-mascot";
 import { useTranslations } from "next-intl";
 import { NeuronContext } from "./neuron-context";
@@ -20,6 +20,7 @@ export function ChatComposer({
     | "aiMode"
     | "mode"
     | "target"
+    | "replyTo"
     | "send"
     | "input"
     | "aiDraft"
@@ -32,6 +33,7 @@ export function ChatComposer({
 }) {
   const t = useTranslations("Demo");
   const room = useTranslations("Room");
+  const extra = useTranslations("ChatExtras");
   const errors = useTranslations("Errors");
   const dispatch = useAppDispatch();
   const { choose } = useRoomUploads();
@@ -85,6 +87,27 @@ export function ChatComposer({
           </span>
         </div>
         {aiMode && <NeuronContext chat={chat} />}
+        {!aiMode && chat.replyTo && (
+          <div className="mb-2 flex items-center gap-2 rounded-lg border-l-2 border-primary bg-muted px-3 py-1.5">
+            <Reply className="size-4 shrink-0 text-primary" />
+            <div className="min-w-0 flex-1 text-xs">
+              <p className="truncate font-semibold">
+                {extra("replyingTo", { author: chat.replyTo.author })}
+              </p>
+              <p className="truncate text-muted-foreground">
+                {chat.replyTo.text}
+              </p>
+            </div>
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              aria-label={extra("cancelReply")}
+              onClick={() => dispatch(actions.replyTo(null))}
+            >
+              <X className="size-4" />
+            </Button>
+          </div>
+        )}
         <form className="flex items-center gap-2" onSubmit={send}>
           <Button
             type="button"

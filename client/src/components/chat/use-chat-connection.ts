@@ -72,6 +72,14 @@ export function useChatConnection() {
             continue;
           }
           dispatch(actions.generation(result.generation));
+          if (result.deletedIds?.length)
+            dispatch(
+              actions.deleted({
+                roomId,
+                generation: result.generation,
+                ids: result.deletedIds,
+              }),
+            );
           if (result.mode !== "after")
             dispatch(
               actions.history({
@@ -147,10 +155,12 @@ export function useChatConnection() {
     socket.on("board:changed", (board: Board) => {
       if (board?.roomId === roomId) publishBoardSnapshot(board);
     });
-    socket.on("message:created", (m: Message) => {
+    const mergeMessage = (m: Message) => {
       if (synchronizing) buffer.push(m);
       else dispatch(actions.merge([m]));
-    });
+    };
+    socket.on("message:created", mergeMessage);
+    socket.on("message:updated", mergeMessage);
     socket.on("files:changed", (event: { roomId?: string }) => {
       if (event?.roomId === roomId)
         dispatch(

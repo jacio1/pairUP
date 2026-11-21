@@ -9,7 +9,7 @@ export function bindChatSocket(socket: Socket) {
   };
 }
 export function sendChatMessage(
-  payload: { text: string; clientRequestId: string },
+  payload: { text: string; clientRequestId: string; targetMessageId?: string },
   acknowledge: (error: Error | null, response?: Delivery) => void,
 ) {
   if (!activeSocket?.connected) {

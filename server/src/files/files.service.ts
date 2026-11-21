@@ -50,6 +50,12 @@ export class Files {
         await tx.$queryRaw`SELECT id FROM "Room" WHERE id=${roomId} FOR UPDATE`;
         const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
         const clientRequestId = `file:${roomId}:${session.id}:${request}`;
+        const previousMessage = await tx.message.findUnique({
+          where: { clientRequestId },
+          select: { kind: true },
+        });
+        if (previousMessage?.kind === "deleted")
+          return toolError("MESSAGE_NOT_FOUND", 404);
         const existing = await tx.attachment.findUnique({
           where: { clientRequestId },
           select: attachmentFields,

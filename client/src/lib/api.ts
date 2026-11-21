@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { CreateListingInput, Listing } from "./local-data";
-import type { Proposal, Session, Snapshot, AiStatus } from "./chat-types";
+import type { Proposal, Session, Snapshot, AiStatus, Message } from "./chat-types";
 
 export const api = createApi({
   reducerPath: "api",
@@ -79,6 +79,12 @@ export const api = createApi({
         body,
       }),
     }),
+    deleteMessage: builder.mutation<Message, { roomId: string; id: string }>({
+      query: ({ roomId, id }) => ({
+        url: `/rooms/${encodeURIComponent(roomId)}/messages/${encodeURIComponent(id)}`,
+        method: "DELETE",
+      }),
+    }),
     reset: builder.mutation<{ ok: boolean }, string>({
       query: (roomId) => ({
         url: `/rooms/${encodeURIComponent(roomId)}/reset`,
@@ -97,6 +103,7 @@ export const {
   useLoginMutation,
   useAskMutation,
   useResetMutation,
+  useDeleteMessageMutation,
   useListingsQuery,
   useCreateListingMutation,
 } = api;

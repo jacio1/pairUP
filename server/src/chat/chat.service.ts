@@ -1,6 +1,7 @@
 import {
   Inject,
   Injectable,
+  Logger,
   OnModuleDestroy,
   OnModuleInit,
 } from "@nestjs/common";
@@ -12,8 +13,10 @@ import { lockChatTransaction } from "../database/chat-lock";
 import { Database } from "../database/database.service";
 import { messageAuthor, profileAuthor } from "../profiles/profiles.service";
 import { Realtime } from "../realtime/realtime.gateway";
+import { removeStoredFile } from "../files/file-storage";
 @Injectable()
 export class Chat implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(Chat.name);
   private limiter = new RateLimiter();
   private stopMessageHandler?: () => void;
   constructor(
@@ -43,8 +46,17 @@ export class Chat implements OnModuleInit, OnModuleDestroy {
     raw: unknown,
     roomId = ROOM,
   ) {
-    const data = raw as { clientRequestId?: unknown; text?: unknown };
-    if (!data || !validId(data.clientRequestId) || !validText(data.text, 1000))
+    const data = raw as {
+      clientRequestId?: unknown;
+      text?: unknown;
+      targetMessageId?: unknown;
+    };
+    if (
+      !data ||
+      !validId(data.clientRequestId) ||
+      !validText(data.text, 1000) ||
+      (data.targetMessageId !== undefined && !validId(data.targetMessageId))
+    )
       return fail("INVALID_INPUT");
     const requestId = `message:${roomId}:${session.id}:${data.clientRequestId}`;
     const result = await this.db.$transaction(async (tx) => {
@@ -61,6 +73,14 @@ export class Chat implements OnModuleInit, OnModuleDestroy {
         };
       if (!this.limiter.allow(`send:${session.id}`, 5, 10000))
         return fail("RATE_LIMIT", 429);
+      const targetId = data.targetMessageId as string | undefined;
+      const target = targetId
+        ? await tx.message.findFirst({
+            where: { id: targetId, roomId, kind: { not: "deleted" } },
+            select: { id: true },
+          })
+        : null;
+      if (targetId && !target) return fail("MESSAGE_NOT_FOUND", 404);
       return {
         message: await tx.message.create({
           include: { authorProfile: profileAuthor },
@@ -70,6 +90,7 @@ export class Chat implements OnModuleInit, OnModuleDestroy {
             authorProfileId: (await messageAuthor(tx, session)).id,
             sessionId: session.id,
             text: (data.text as string).trim(),
+            targetMessageId: target?.id,
             clientRequestId: requestId,
           },
         }),
@@ -82,6 +103,38 @@ export class Chat implements OnModuleInit, OnModuleDestroy {
       generation: result.generation ?? result.message.generation,
     };
     if (result.created) this.rt.emit("message:created", message, roomId);
+    return message;
+  }
+  async deleteMessage(sessionId: number, roomId: string, id: string) {
+    if (!validId(id)) return fail("INVALID_INPUT");
+    const { message, storageKey } = await this.db.$transaction(async (tx) => {
+      await lockChatTransaction(tx);
+      const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
+      const original = await tx.message.findFirst({
+        where: { roomId, id },
+        include: { attachment: { select: { id: true, storageKey: true } } },
+      });
+      if (!original) return fail("MESSAGE_NOT_FOUND", 404);
+      if (original.sessionId !== sessionId || original.kind === "ai")
+        return fail("FORBIDDEN", 403);
+      if (original.attachment)
+        await tx.attachment.delete({ where: { id: original.attachment.id } });
+      const deleted = await tx.message.update({
+        where: { id },
+        data: { kind: "deleted", text: "", targetMessageId: null },
+      });
+      return {
+        message: { ...deleted, generation: room.generation },
+        storageKey: original.attachment?.storageKey,
+      };
+    });
+    this.rt.emit("message:updated", message, roomId);
+    if (storageKey) {
+      this.rt.emit("files:changed", { roomId }, roomId);
+      await removeStoredFile(storageKey).catch(() => {
+        this.logger.warn(`Could not remove stored attachment for message ${id}`);
+      });
+    }
     return message;
   }
   async reset(roomId = ROOM) {

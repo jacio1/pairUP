@@ -34,6 +34,7 @@ export type AiStatus = {
   error?: string | null;
 } | null;
 export type Snapshot = {
+  deletedIds?: string[];
   references: { id: string; text: string }[];
   roomId: string;
   mode: "latest" | "older" | "after";

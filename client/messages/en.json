@@ -51,6 +51,17 @@
     "discard": "Discard unsaved drawings"
   },
   "ChatExtras": {
+    "messageActions": "Message actions",
+    "reply": "Reply",
+    "replyingTo": "Replying to {author}",
+    "cancelReply": "Cancel reply",
+    "deleteMessage": "Delete message",
+    "deleteConfirm": "This message will be removed for everyone in the chat.",
+    "cancelDelete": "Cancel",
+    "jumpToMessage": "Go to original message: {text}",
+    "backToReply": "Return to reply",
+    "latestMessage": "Go to latest message",
+    "messageUnavailable": "Original message unavailable",
     "viewProfile": "View {name}’s profile",
     "profilePreview": "Study partner",
     "fullProfile": "Open full profile",

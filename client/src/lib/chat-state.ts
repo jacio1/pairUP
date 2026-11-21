@@ -15,6 +15,8 @@ const initialState: {
   aiDraft: string;
   aiMode: boolean;
   target: Message | null;
+  replyTo: Message | null;
+  deletedIds: Record<string, true>;
 } = {
   session: null,
   roomId: null,
@@ -29,7 +31,18 @@ const initialState: {
   aiDraft: "",
   aiMode: false,
   target: null,
+  replyTo: null,
+  deletedIds: {},
 };
+
+function markDeleted(state: typeof initialState, ids: string[]) {
+  for (const id of ids) {
+    state.deletedIds[id] = true;
+    delete state.references[id];
+    if (state.replyTo?.id === id) state.replyTo = null;
+    if (state.target?.id === id) state.target = null;
+  }
+}
 const slice = createSlice({
   name: "chat",
   initialState,
@@ -46,6 +59,8 @@ const slice = createSlice({
       state.generation = -1;
       state.ai = null;
       state.target = null;
+      state.replyTo = null;
+      state.deletedIds = {};
       state.draft = "";
       state.aiDraft = "";
       state.aiMode = false;
@@ -63,7 +78,8 @@ const slice = createSlice({
         state.generation !== action.payload.generation
       )
         return;
-      for (const item of action.payload.items) state.references[item.id] = item;
+      for (const item of action.payload.items)
+        if (!state.deletedIds[item.id]) state.references[item.id] = item;
     },
     history(
       state,
@@ -90,9 +106,37 @@ const slice = createSlice({
         if (m.roomId && m.roomId !== state.roomId) continue;
         if (m.generation !== undefined && m.generation !== state.generation)
           continue;
+        if (m.kind === "deleted") markDeleted(state, [m.id]);
         byId.set(m.id, m);
       }
-      state.messages = [...byId.values()].sort((a, b) => a.seq - b.seq);
+      state.messages = [...byId.values()]
+        .filter((m) => !state.deletedIds[m.id])
+        .sort((a, b) => a.seq - b.seq);
+    },
+    deleted(
+      state,
+      action: PayloadAction<{
+        roomId: string;
+        generation: number;
+        ids: string[];
+      }>,
+    ) {
+      if (
+        state.roomId !== action.payload.roomId ||
+        state.generation !== action.payload.generation
+      )
+        return;
+      markDeleted(state, action.payload.ids);
+      state.messages = state.messages.filter((m) => !state.deletedIds[m.id]);
+    },
+    replyTo(state, action: PayloadAction<Message | null>) {
+      state.replyTo =
+        action.payload && !state.deletedIds[action.payload.id]
+          ? action.payload
+          : null;
+    },
+    clearReply(state, action: PayloadAction<string | undefined>) {
+      if (state.replyTo?.id === action.payload) state.replyTo = null;
     },
     generation(state, action: PayloadAction<number>) {
       if (action.payload < state.generation) return;
@@ -102,6 +146,8 @@ const slice = createSlice({
         state.historyReady = false;
         state.hasOlder = false;
         state.target = null;
+        state.replyTo = null;
+        state.deletedIds = {};
         state.ai = null;
         state.generation = action.payload;
       }

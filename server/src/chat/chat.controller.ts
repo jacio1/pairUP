@@ -1,5 +1,6 @@
 import {
   Controller,
+  Delete,
   Get,
   Inject,
   Param,
@@ -18,6 +19,15 @@ export class ChatController {
     @Inject(Chat) private chat: Chat,
     @Inject(ChatHistory) private history: ChatHistory,
   ) {}
+  @Delete("rooms/:id/messages/:messageId")
+  async deleteMessage(
+    @Req() req: Request,
+    @Param("id") id: string,
+    @Param("messageId") messageId: string,
+  ) {
+    const session = await this.auth.roomAccess(req.headers.cookie, id);
+    return this.chat.deleteMessage(this.auth.view(session).id, id, messageId);
+  }
   @Get("rooms/:id/messages") async messages(
     @Req() req: Request,
     @Param("id") id: string,

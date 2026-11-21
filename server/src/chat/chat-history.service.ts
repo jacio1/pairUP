@@ -44,6 +44,15 @@ export class ChatHistory {
         orderBy: { createdAt: "desc" },
       });
       return {
+        deletedIds:
+          window.mode === "older"
+            ? []
+            : (
+                await tx.message.findMany({
+                  where: { roomId, kind: "deleted" },
+                  select: { id: true },
+                })
+              ).map(({ id }) => id),
         references: references.map((m) => ({
           ...m,
           text: m.text.slice(0, 160),

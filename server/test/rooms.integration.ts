@@ -80,6 +80,53 @@ test("feature modules preserve room data, realtime delivery and AI lifecycle", a
         );
       },
     );
+    await t.test(
+      "replies are room scoped and only the sender can delete a message",
+      async () => {
+        const send = (text: string, targetMessageId?: string) =>
+          client.timeout(3000).emitWithAck("message:send", {
+            clientRequestId: randomUUID(),
+            text,
+            targetMessageId,
+          });
+        const original = (await send("Original")).message;
+        const reply = await send("Reply", original.id);
+        assert.equal(reply.message.targetMessageId, original.id);
+        const foreign = await f.db.message.create({
+          data: {
+            roomId: other,
+            author: "Fixture",
+            text: "Private",
+            clientRequestId: randomUUID(),
+          },
+        });
+        assert.equal(
+          (await send("Invalid quote", foreign.id)).code,
+          "MESSAGE_NOT_FOUND",
+        );
+        const remove = (cookie: string) =>
+          fetch(f.base + `/api/rooms/${room}/messages/${original.id}`, {
+            method: "DELETE",
+            headers: { Cookie: cookie },
+          });
+        assert.equal((await remove(owner.cookie)).status, 403);
+        const updated = once(client, "message:updated");
+        assert.equal((await remove(guest.cookie)).status, 200);
+        await updated;
+        const catchup = await f.api(
+          `/rooms/${room}/messages?after=${reply.message.seq}`,
+          guest.cookie,
+        );
+        assert.ok(catchup.data.deletedIds.includes(original.id));
+        const history = await f.api(`/rooms/${room}/messages`, guest.cookie);
+        assert.equal(
+          history.data.messages.find(
+            (m: { id: string }) => m.id === original.id,
+          ).text,
+          "",
+        );
+      },
+    );
     let worker = f.socket("", undefined, true);
     const online = once(worker, "worker:ready");
     worker.connect();
