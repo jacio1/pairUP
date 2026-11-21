@@ -4,7 +4,7 @@ import { TokenVerifier } from "livekit-server-sdk";
 import { VoiceService } from "../src/voice/voice.service";
 import { HttpException } from "@nestjs/common";
 
-test("voice tokens are short-lived, room-scoped and microphone-only", async () => {
+test("call tokens are short-lived and scoped to the room and supported media sources", async () => {
   const previous = { ...process.env };
   try {
     process.env.LIVEKIT_URL = "ws://localhost:7880";
@@ -22,7 +22,11 @@ test("voice tokens are short-lived, room-scoped and microphone-only", async () =
     ).verify(result.token);
     assert.equal(claims.sub, "session-42");
     assert.equal(claims.video?.room, "pairup-private-room");
-    assert.deepEqual(claims.video?.canPublishSources, ["microphone"]);
+    assert.deepEqual(claims.video?.canPublishSources, [
+      "microphone",
+      "camera",
+      "screen_share",
+    ]);
     assert.equal(claims.video?.canPublishData, false);
     assert.equal(claims.video?.roomJoin, true);
     assert.ok(claims.exp! - claims.nbf! <= 60);

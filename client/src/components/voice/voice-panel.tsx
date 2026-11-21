@@ -1,9 +1,20 @@
 "use client";
-import { Headphones, Mic, MicOff, PhoneOff, Volume2 } from "lucide-react";
+import {
+  Headphones,
+  Mic,
+  MicOff,
+  MonitorUp,
+  PhoneOff,
+  Video,
+  VideoOff,
+  Volume2,
+} from "lucide-react";
+import { Track } from "livekit-client";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { useAppSelector } from "@/lib/hooks";
 import { useVoiceRoom } from "./use-voice-room";
+import { CallVideoTile } from "./call-video-tile";
 
 export function VoicePanel({ roomId }: { roomId: string }) {
   const session = useAppSelector((state) => state.chat.session);
@@ -12,6 +23,8 @@ export function VoicePanel({ roomId }: { roomId: string }) {
   if (!session) return null;
   const joined =
     voice.status === "connected" || voice.status === "reconnecting";
+  const canShare =
+    joined && typeof navigator.mediaDevices?.getDisplayMedia === "function";
   return (
     <section
       aria-label={t("title")}
@@ -45,6 +58,34 @@ export function VoicePanel({ roomId }: { roomId: string }) {
                 {t(voice.muted ? "unmute" : "mute")}
               </Button>
             )}
+            {joined && (
+              <>
+                <Button
+                  size="sm"
+                  variant={voice.camera ? "secondary" : "outline"}
+                  disabled={voice.busy || voice.status !== "connected"}
+                  aria-pressed={voice.camera}
+                  onClick={() => void voice.toggleVideo(Track.Source.Camera)}
+                >
+                  {voice.camera ? <Video /> : <VideoOff />}
+                  {t("camera")}
+                </Button>
+                {canShare && (
+                  <Button
+                    size="sm"
+                    variant={voice.sharing ? "secondary" : "outline"}
+                    disabled={voice.busy || voice.status !== "connected"}
+                    aria-pressed={voice.sharing}
+                    onClick={() =>
+                      void voice.toggleVideo(Track.Source.ScreenShare)
+                    }
+                  >
+                    <MonitorUp />
+                    {t("screen")}
+                  </Button>
+                )}
+              </>
+            )}
             <Button
               size="sm"
               variant="destructive"
@@ -67,6 +108,20 @@ export function VoicePanel({ roomId }: { roomId: string }) {
           </Button>
         )}
       </div>
+      {voice.videos.length > 0 && (
+        <div className="mt-2 grid max-h-[36dvh] grid-cols-2 gap-2 overflow-y-auto overscroll-contain sm:grid-cols-3 lg:grid-cols-4">
+          {voice.videos
+            .filter((video) => video.source === Track.Source.ScreenShare)
+            .map((video) => (
+              <CallVideoTile key={video.id} video={video} />
+            ))}
+          {voice.videos
+            .filter((video) => video.source === Track.Source.Camera)
+            .map((video) => (
+              <CallVideoTile key={video.id} video={video} />
+            ))}
+        </div>
+      )}
       {voice.participants.length > 0 && (
         <ul
           aria-label={t("participants")}

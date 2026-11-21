@@ -443,6 +443,12 @@
     "connectionError": "Could not connect to voice. Please try again.",
     "disconnected": "Voice connection ended. You can join again.",
     "microphoneError": "Microphone unavailable. Check browser permissions and your device.",
+    "camera": "Camera",
+    "screen": "Share screen",
+    "cameraOf": "{name} · Camera",
+    "sharedScreenOf": "{name} · Shared screen",
+    "cameraError": "Camera unavailable. Check browser permissions and your device.",
+    "screenError": "Could not share your screen. Check browser permissions and try again.",
     "playbackError": "Could not play audio. Check browser permissions."
   },
   "StudyTools": {

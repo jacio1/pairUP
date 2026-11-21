@@ -29,7 +29,11 @@ export class VoiceService {
       roomJoin: true,
       canSubscribe: true,
       canPublish: true,
-      canPublishSources: [TrackSource.MICROPHONE],
+      canPublishSources: [
+        TrackSource.MICROPHONE,
+        TrackSource.CAMERA,
+        TrackSource.SCREEN_SHARE,
+      ],
       canPublishData: false,
       canUpdateOwnMetadata: false,
     });

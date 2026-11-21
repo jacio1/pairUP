@@ -1,6 +1,20 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ConnectionState, Room, RoomEvent, Track } from "livekit-client";
+import {
+  ConnectionState,
+  Room,
+  RoomEvent,
+  Track,
+  type LocalVideoTrack,
+  type RemoteVideoTrack,
+} from "livekit-client";
+
+export type CallVideo = {
+  id: string;
+  name: string;
+  source: Track.Source.Camera | Track.Source.ScreenShare;
+  track: LocalVideoTrack | RemoteVideoTrack;
+};
 
 export function useVoiceRoom(roomId: string, sessionId?: number) {
   const current = useRef<Room | null>(null);
@@ -12,6 +26,9 @@ export function useVoiceRoom(roomId: string, sessionId?: number) {
   const [muted, setMuted] = useState(true);
   const [audioBlocked, setAudioBlocked] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [videos, setVideos] = useState<CallVideo[]>([]);
+  const [camera, setCamera] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const [participants, setParticipants] = useState<
     { id: string; name: string; speaking: boolean; muted: boolean }[]
   >([]);
@@ -25,6 +42,9 @@ export function useVoiceRoom(roomId: string, sessionId?: number) {
     audio.current.forEach((element) => element.remove());
     audio.current.clear();
     setParticipants([]);
+    setVideos([]);
+    setCamera(false);
+    setSharing(false);
     setStatus("idle");
     setMuted(true);
     setBusy(false);
@@ -56,6 +76,25 @@ export function useVoiceRoom(roomId: string, sessionId?: number) {
         })),
       );
       setMuted(!room.localParticipant.isMicrophoneEnabled);
+      setCamera(room.localParticipant.isCameraEnabled);
+      setSharing(room.localParticipant.isScreenShareEnabled);
+      setVideos(
+        all.flatMap((participant) =>
+          [Track.Source.Camera, Track.Source.ScreenShare].flatMap((source) => {
+            const publication = participant.getTrackPublication(source);
+            const track = publication?.videoTrack;
+            if (!track || publication.isMuted) return [];
+            return [
+              {
+                id: publication.trackSid,
+                name: participant.name || participant.identity,
+                source: source as CallVideo["source"],
+                track,
+              },
+            ];
+          }),
+        ),
+      );
     };
     room
       .on(RoomEvent.ParticipantConnected, sync)
@@ -64,6 +103,7 @@ export function useVoiceRoom(roomId: string, sessionId?: number) {
       .on(RoomEvent.TrackMuted, sync)
       .on(RoomEvent.TrackUnmuted, sync)
       .on(RoomEvent.LocalTrackPublished, sync)
+      .on(RoomEvent.LocalTrackUnpublished, sync)
       .on(RoomEvent.ConnectionStateChanged, (state) => {
         if (active())
           setStatus(
@@ -79,17 +119,20 @@ export function useVoiceRoom(roomId: string, sessionId?: number) {
         if (active()) setAudioBlocked(!room.canPlaybackAudio);
       })
       .on(RoomEvent.TrackSubscribed, (track) => {
+        sync();
         if (!active() || track.kind !== Track.Kind.Audio) return;
         const element = track.attach();
         audio.current.add(element);
         document.body.appendChild(element);
       })
-      .on(RoomEvent.TrackUnsubscribed, (track) =>
+      .on(RoomEvent.TrackUnsubscribed, (track) => {
+        sync();
+        if (track.kind !== Track.Kind.Audio) return;
         track.detach().forEach((element) => {
           element.remove();
           audio.current.delete(element);
-        }),
-      )
+        });
+      })
       .on(RoomEvent.Disconnected, () => {
         if (active()) {
           leave();
@@ -174,12 +217,46 @@ export function useVoiceRoom(roomId: string, sessionId?: number) {
       setError("playbackError");
     }
   }
+  async function toggleVideo(source: CallVideo["source"]) {
+    const room = current.current;
+    if (!room || busy || room.state !== ConnectionState.Connected) return;
+    const participant = room.localParticipant;
+    const screen = source === Track.Source.ScreenShare;
+    setBusy(true);
+    setError("");
+    try {
+      if (screen) {
+        await participant.setScreenShareEnabled(
+          !participant.isScreenShareEnabled,
+          { audio: false },
+        );
+      } else if (participant.isCameraEnabled) {
+        const track = participant.getTrackPublication(source)?.track;
+        if (track) await participant.unpublishTrack(track, true);
+      } else {
+        await participant.setCameraEnabled(true);
+      }
+      if (current.current !== room) {
+        const track = participant.getTrackPublication(source)?.track;
+        if (track) await participant.unpublishTrack(track, true);
+      }
+    } catch {
+      if (current.current === room)
+        setError(screen ? "screenError" : "cameraError");
+    } finally {
+      if (current.current === room) setBusy(false);
+    }
+  }
   return {
     status,
     error,
     muted,
     busy,
     participants,
+    videos,
+    camera,
+    sharing,
+    toggleVideo,
     audioBlocked,
     join,
     leave,
