@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, type Prisma } from "@prisma/client";
 import { fail as toolError } from "../common/api-error";
 import { validId } from "../core";
 import { Database } from "../database/database.service";
@@ -32,24 +32,31 @@ export class StudyTools {
     if (!note) return toolError("NOT_FOUND", 404);
     return { ...note, state: Buffer.from(note.state).toString("base64") };
   }
-  async createNote(roomId: string, input: { id?: unknown }) {
+  async createNote(
+    roomId: string,
+    input: { id?: unknown },
+    transaction?: { tx: Prisma.TransactionClient; state: string },
+  ) {
     if (!validId(input?.id)) return toolError("INVALID_INPUT");
     const id = input.id as string;
-    await this.db.$transaction(async (tx) => {
+    const create = async (tx: Prisma.TransactionClient) => {
       // Lock only this room: counts remain bounded even with concurrent API instances.
       await tx.$queryRaw`SELECT id FROM "Room" WHERE id = ${roomId} FOR UPDATE`;
       const existing = await tx.studyNote.findUnique({ where: { id } });
       if (existing) {
-        if (existing.roomId !== roomId) toolError("FORBIDDEN", 403);
-        return;
+        if (existing.roomId !== roomId) return toolError("FORBIDDEN", 403);
+        return existing;
       }
       if ((await tx.studyNote.count({ where: { roomId } })) >= 30)
         return toolError("TOOL_LIMIT");
-      await tx.studyNote.create({
-        data: { id, roomId, ...noteState(undefined) },
+      return tx.studyNote.create({
+        data: { id, roomId, ...noteState(undefined, transaction?.state) },
       });
-    });
-    return this.note(roomId, id);
+    };
+    const note = transaction
+      ? await create(transaction.tx)
+      : await this.db.$transaction(create);
+    return { ...note, state: Buffer.from(note.state).toString("base64") };
   }
   async updateNote(roomId: string, id: string, input: { state?: unknown }) {
     if (!input || typeof input.state !== "string")
@@ -81,7 +88,11 @@ export class StudyTools {
     }
     return { ok: true };
   }
-  async createTask(roomId: string, input: { id?: unknown; title?: unknown }) {
+  async createTask(
+    roomId: string,
+    input: { id?: unknown; title?: unknown },
+    transaction?: Prisma.TransactionClient,
+  ) {
     if (
       !validId(input?.id) ||
       typeof input.title !== "string" ||
@@ -91,7 +102,7 @@ export class StudyTools {
       return toolError("INVALID_INPUT");
     const id = input.id as string,
       title = input.title.trim();
-    return this.db.$transaction(async (tx) => {
+    const create = async (tx: Prisma.TransactionClient) => {
       await tx.$queryRaw`SELECT id FROM "Room" WHERE id = ${roomId} FOR UPDATE`;
       const existing = await tx.studyTask.findUnique({ where: { id } });
       if (existing) {
@@ -101,7 +112,8 @@ export class StudyTools {
       if ((await tx.studyTask.count({ where: { roomId } })) >= 100)
         return toolError("TOOL_LIMIT");
       return tx.studyTask.create({ data: { id, roomId, title } });
-    });
+    };
+    return transaction ? create(transaction) : this.db.$transaction(create);
   }
   async updateTask(
     roomId: string,

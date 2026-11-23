@@ -146,6 +146,53 @@ test("feature modules preserve room data, realtime delivery and AI lifecycle", a
       );
       return f.db.aiJob.findUniqueOrThrow({ where: { id } });
     };
+    await t.test("Neuron saves a batch of tools in the requesting room", async () => {
+      const toolsRoom = await f.room(owner);
+      const viewer = f.socket(owner.cookie, toolsRoom);
+      const ready = once(viewer, "room:ready");
+      viewer.connect();
+      await ready;
+      const changed = once(viewer, "tools:changed");
+      worker.once("worker:job", ({ id }) => {
+        const actions = [
+          { type: "create_task", title: "Read chapter 2" },
+          { type: "create_note", title: "Reading", body: "Start at page 12" },
+          { type: "timer", action: "start" },
+        ];
+        worker.emit("worker:result", {
+          id,
+          text: "PAIRUP_ACTIONS\n" + JSON.stringify(actions),
+        });
+      });
+      const path = `/rooms/${toolsRoom}`;
+      const response = await f.api(`${path}/ai/requests`, owner.cookie, {
+        clientRequestId: randomUUID(),
+        prompt: "Add a task to read chapter 2, save a note titled Reading with the text Start at page 12, and start the timer.",
+        locale: "en",
+      });
+      assert.equal(response.status, 201);
+      assert.equal((await changed).roomId, toolsRoom);
+      assert.equal((await settled(response.data.id)).status, "completed");
+      const snapshot = (await f.api(`${path}/tools`, owner.cookie)).data;
+      assert.deepEqual(snapshot.tasks.map(({ title }: { title: string }) => title), ["Read chapter 2"]);
+      assert.equal(snapshot.notes.length, 1);
+      assert.equal(snapshot.notes[0].title, "Reading");
+      const note = (await f.api(`${path}/tools/notes/${snapshot.notes[0].id}`, owner.cookie)).data;
+      const doc = new Y.Doc();
+      try {
+        Y.applyUpdate(doc, Buffer.from(note.state, "base64"));
+        assert.equal(doc.getText("body").toString(), "Start at page 12");
+      } finally {
+        doc.destroy();
+      }
+      const timer = (await f.api(`${path}/tools/timer`, owner.cookie)).data;
+      assert.ok(new Date(timer.endsAt).getTime() > timer.serverNow);
+      assert.equal(await f.db.studyTask.count({ where: { roomId: other } }), 0);
+      const answer = await f.db.message.findUniqueOrThrow({
+        where: { clientRequestId: "job-answer:" + response.data.id },
+      });
+      assert.equal(answer.text, "Created task “Read chapter 2”.\nCreated note “Reading”.\nStarted the timer.");
+    });
     await t.test(
       "local worker context, idempotent AI requests and one final answer",
       async () => {

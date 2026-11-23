@@ -20,18 +20,26 @@ export class RoomActivities {
     });
     return { ...timer, serverNow: Date.now() };
   }
-  async updateTimer(roomId: string, input: TimerInput) {
-    return this.db.$transaction(async (tx) => {
+  async updateTimer(
+    roomId: string,
+    input: TimerInput | { action: "start" | "pause" | "reset" },
+    transaction?: Prisma.TransactionClient,
+  ) {
+    const update = async (tx: Prisma.TransactionClient) => {
       await tx.$queryRaw`SELECT id FROM "Room" WHERE id=${roomId} FOR UPDATE`;
       const current = await tx.roomTimer.upsert({
         where: { roomId },
         create: { roomId },
         update: {},
       });
-      const { roomId: _, ...data } = changeTimer(current, input, Date.now());
+      const command = transaction && !("version" in input)
+        ? { ...input, version: current.version }
+        : (input as TimerInput);
+      const { roomId: _, ...data } = changeTimer(current, command, Date.now());
       const timer = await tx.roomTimer.update({ where: { roomId }, data });
       return { ...timer, serverNow: Date.now() };
-    });
+    };
+    return transaction ? update(transaction) : this.db.$transaction(update);
   }
   board(roomId: string) {
     return this.db.roomBoard.upsert({

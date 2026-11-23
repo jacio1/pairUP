@@ -9,5 +9,6 @@ import { StudyTools } from "./study-tools.service";
   imports: [DatabaseModule, AuthModule, RealtimeModule],
   controllers: [StudyToolsController],
   providers: [StudyTools, RoomActivities],
+  exports: [StudyTools, RoomActivities],
 })
 export class StudyToolsModule {}
