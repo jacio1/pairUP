@@ -71,6 +71,8 @@ export const api = createApi({
         prompt: string;
         locale: string;
         targetMessageId?: string;
+        tool?: "notes" | "tasks" | "pomodoro";
+        noteId?: string;
       }
     >({
       query: ({ roomId, ...body }) => ({

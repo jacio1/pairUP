@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { StickyNote, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import {
   studyError,
   useCreateNoteMutation,
@@ -10,7 +10,13 @@ import {
 } from "@/lib/study-tools-api";
 import { NoteEditor } from "./note-editor";
 import { ToolFeedback } from "./tool-feedback";
-export function NotesPanel({ roomId }: { roomId: string }) {
+export function NotesPanel({
+  roomId,
+  neuron,
+}: {
+  roomId: string;
+  neuron: (id?: string) => ReactNode;
+}) {
   const t = useTranslations("StudyTools");
   const {
     data,
@@ -87,6 +93,7 @@ export function NotesPanel({ roomId }: { roomId: string }) {
           ))}
         </nav>
       )}
+      {data && neuron(active)}
       {active && (
         <NoteEditor
           key={active}

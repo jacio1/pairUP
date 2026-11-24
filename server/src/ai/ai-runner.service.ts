@@ -38,6 +38,7 @@ export class AiRunner {
     messages: ReturnType<typeof buildContext>,
     requestMessageId: string,
     roomId: string,
+    scope: { tool?: "notes" | "tasks" | "pomodoro"; noteId?: string },
   ) {
     const controller = new AbortController();
     this.activeJobs.set(id, controller);
@@ -55,7 +56,15 @@ export class AiRunner {
       let rejected = false;
       try {
         actions = parseToolResponse(text);
+        if (actions?.some(({ type }) => {
+          if (type === "append_note") return !scope.noteId;
+          if (scope.tool === "notes") return type !== "create_note";
+          if (scope.tool === "tasks") return type !== "create_task";
+          if (scope.tool === "pomodoro") return type !== "timer";
+          return false;
+        })) throw new Error("INVALID_ACTION_SCOPE");
       } catch {
+        actions = null;
         rejected = true;
       }
       const failureText = {
@@ -72,6 +81,11 @@ export class AiRunner {
         const confirmations: string[] = [];
         for (const action of actions ?? []) {
           switch (action.type) {
+            case "append_note": {
+              await this.tools.appendNote(tx, roomId, scope.noteId!, action.body);
+              confirmations.push(ru ? "Текст добавлен в заметку." : "Added text to the note.");
+              break;
+            }
             case "create_task": {
               const task = await this.tools.createTask(
                 roomId,
@@ -132,7 +146,9 @@ export class AiRunner {
         return persist();
       });
       if (message) {
-        if (actions) this.rt.emit("tools:changed", {}, roomId);
+        if (actions) this.rt.emit("tools:changed", {
+          noteId: actions.some(({ type }) => type === "append_note") ? scope.noteId : undefined,
+        }, roomId);
         this.rt.emit("message:created", { ...message, generation }, roomId);
         this.rt.emit(
           "ai:status",

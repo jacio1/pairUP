@@ -6,14 +6,17 @@ import { PanelRightClose } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useToolResize } from "./use-tool-resize";
 import type { CSSProperties } from "react";
+import type { ChatActions } from "./use-chat-actions";
 export function ToolSidebar({
   activeTool,
   roomId,
   onClose,
+  chat,
 }: {
   activeTool: Exclude<SessionTool, "chat">;
   roomId: string;
   onClose: () => void;
+  chat: ChatActions;
 }) {
   const room = useTranslations("Room");
   const t = useTranslations("Files"),
@@ -53,7 +56,7 @@ export function ToolSidebar({
         </Button>
       </div>
       <div className="min-h-0 flex-1">
-        <SessionToolPanel tool={activeTool} roomId={roomId} />
+        <SessionToolPanel key={activeTool} tool={activeTool} roomId={roomId} chat={chat} openChat={onClose} />
       </div>
     </aside>
   );

@@ -51,6 +51,7 @@ function ChatWorkspace({ roomId }: { roomId: string }) {
             <ToolSidebar
               roomId={roomId}
               activeTool={activeTool}
+              chat={chat}
               onClose={() => setActiveTool("chat")}
             />
           )}

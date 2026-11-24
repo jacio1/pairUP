@@ -21,6 +21,8 @@ export class AiService {
       prompt?: unknown;
       locale?: unknown;
       targetMessageId?: unknown;
+      tool?: unknown;
+      noteId?: unknown;
     },
     roomId = ROOM,
   ) {
@@ -29,9 +31,13 @@ export class AiService {
       !validId(data.clientRequestId) ||
       !validText(data.prompt, 2000) ||
       !["en", "ru"].includes(data.locale as string) ||
-      (data.targetMessageId !== undefined && !validId(data.targetMessageId))
+      (data.targetMessageId !== undefined && !validId(data.targetMessageId)) ||
+      (data.tool !== undefined && !["notes", "tasks", "pomodoro"].includes(data.tool as string)) ||
+      (data.noteId !== undefined && (data.tool !== "notes" || !validId(data.noteId)))
     )
       return fail("INVALID_INPUT");
+    const tool = data.tool as "notes" | "tasks" | "pomodoro" | undefined;
+    const noteId = data.noteId as string | undefined;
     const requestId = `ai:${roomId}:${session.id}:${data.clientRequestId}`;
     const result = await this.db.$transaction(async (tx) => {
       await lockChatTransaction(tx);
@@ -40,6 +46,8 @@ export class AiService {
       });
       if (existing) return { job: existing, messages: null, message: null };
       const room = await tx.room.findUniqueOrThrow({ where: { id: roomId } });
+      if (noteId && !(await tx.studyNote.findFirst({ where: { id: noteId, roomId }, select: { id: true } })))
+        return fail("NOT_FOUND", 404);
       const latest = await tx.aiJob.findFirst({
         where: { roomId: roomId, generation: room.generation },
         orderBy: { createdAt: "desc" },
@@ -116,9 +124,19 @@ export class AiService {
           targetMessageId: target?.id,
         },
       });
+      const messages = buildContext(context, job.prompt, job.locale);
+      if (tool === "notes") {
+        messages[0].content += noteId
+          ? ' The request comes from a selected note. When asked to write or add text to the selected note, use {"type":"append_note","body":"text to append"} in the action array. Only create a new note if the user asks for a new note. Appending preserves the existing text.'
+          : " The request comes from the Notes tab with no selected note. When asked to save text as a note, create a note with a short title.";
+      } else if (tool) {
+        messages[0].content += tool === "tasks"
+          ? " The request comes from the Tasks tab and can only create tasks."
+          : " The request comes from the Timer tab and can only start, pause, or reset the timer.";
+      }
       return {
         job,
-        messages: buildContext(context, job.prompt, job.locale),
+        messages,
         message,
       };
     });
@@ -146,6 +164,7 @@ export class AiService {
         result.messages,
         result.message!.id,
         roomId,
+        { tool, noteId },
       );
     }
     return {

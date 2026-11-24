@@ -17,6 +17,7 @@ Keep requested wording and language. For ordinary chat, answer in plain text and
 type Action =
   | { type: "create_task"; title: string }
   | { type: "create_note"; title: string; body: string }
+  | { type: "append_note"; body: string }
   | { type: "timer"; action: "start" | "pause" | "reset" };
 
 function parseAction(value: unknown): Action {
@@ -39,6 +40,10 @@ function parseAction(value: unknown): Action {
       if ("action" in value &&
         (value.action === "start" || value.action === "pause" || value.action === "reset"))
         return { type: value.type, action: value.action };
+      break;
+    case "append_note":
+      if ("body" in value && validText(value.body, 3000))
+        return { type: value.type, body: value.body.trim() };
       break;
   }
   throw new Error("INVALID_ACTION");

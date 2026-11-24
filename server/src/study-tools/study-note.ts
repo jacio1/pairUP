@@ -8,7 +8,11 @@ export const versionInput = (value: unknown) => {
   return value as number;
 };
 
-export function noteState(existing: Uint8Array | undefined, input?: unknown) {
+export function noteState(
+  existing: Uint8Array | undefined,
+  input?: unknown,
+  append?: string,
+) {
   const doc = new Y.Doc();
   try {
     if (existing) Y.applyUpdate(doc, existing);
@@ -22,7 +26,9 @@ export function noteState(existing: Uint8Array | undefined, input?: unknown) {
       Y.applyUpdate(doc, new Uint8Array(Buffer.from(input, "base64")));
     }
     const title = doc.getText("title").toString();
-    const body = doc.getText("body").toString();
+    const bodyText = doc.getText("body");
+    if (append) bodyText.insert(bodyText.length, (bodyText.length ? "\n\n" : "") + append);
+    const body = bodyText.toString();
     const state = Buffer.from(Y.encodeStateAsUpdate(doc));
     if (
       title.length > 120 ||

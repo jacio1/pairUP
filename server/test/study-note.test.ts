@@ -42,6 +42,22 @@ test("notes reject malformed documents and oversized text", () => {
   );
   doc.destroy();
 });
+test("a Neuron append preserves the title and merges concurrent edits", () => {
+  const doc = new Y.Doc();
+  try {
+    doc.getText("title").insert(0, "Plan");
+    doc.getText("body").insert(0, "Read chapter 2");
+    const original = Y.encodeStateAsUpdate(doc);
+    const appended = noteState(original, undefined, "Solve exercise 7");
+    doc.getText("body").insert(0, "Today: ");
+    Y.applyUpdate(doc, appended.state);
+    assert.equal(appended.title, "Plan");
+    assert.equal(doc.getText("body").toString(), "Today: Read chapter 2\n\nSolve exercise 7");
+    assert.throws(() => noteState(original, undefined, "x".repeat(20000)), HttpException);
+  } finally {
+    doc.destroy();
+  }
+});
 test("study tools authorize before reading, writing or broadcasting", async () => {
   let touched = false;
   const auth = {

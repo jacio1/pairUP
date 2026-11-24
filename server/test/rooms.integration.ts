@@ -192,6 +192,41 @@ test("feature modules preserve room data, realtime delivery and AI lifecycle", a
         where: { clientRequestId: "job-answer:" + response.data.id },
       });
       assert.equal(answer.text, "Created task “Read chapter 2”.\nCreated note “Reading”.\nStarted the timer.");
+
+      const append = {
+        clientRequestId: randomUUID(),
+        prompt: "Add Read chapter 3 to this note",
+        locale: "en",
+        tool: "notes",
+        noteId: snapshot.notes[0].id,
+      };
+      assert.equal(
+        (await f.api(`/rooms/${other}/ai/requests`, owner.cookie, append)).status,
+        404,
+      );
+      await f.db.aiJob.update({
+        where: { id: response.data.id },
+        data: { createdAt: new Date(Date.now() - 20000) },
+      });
+      const noteChanged = once(viewer, "tools:changed");
+      worker.once("worker:job", ({ id }) => {
+        worker.emit("worker:result", {
+          id,
+          text: 'PAIRUP_ACTIONS\n[{"type":"append_note","body":"Read chapter 3"}]',
+        });
+      });
+      const next = await f.api(`${path}/ai/requests`, owner.cookie, append);
+      assert.equal(next.status, 201);
+      assert.equal((await noteChanged).noteId, append.noteId);
+      assert.equal((await settled(next.data.id)).status, "completed");
+      const updated = await f.api(`${path}/tools/notes/${append.noteId}`, owner.cookie);
+      const updatedDoc = new Y.Doc();
+      try {
+        Y.applyUpdate(updatedDoc, Buffer.from(updated.data.state, "base64"));
+        assert.equal(updatedDoc.getText("body").toString(), "Start at page 12\n\nRead chapter 3");
+      } finally {
+        updatedDoc.destroy();
+      }
     });
     await t.test(
       "local worker context, idempotent AI requests and one final answer",

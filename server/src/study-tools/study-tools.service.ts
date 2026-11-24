@@ -61,19 +61,34 @@ export class StudyTools {
   async updateNote(roomId: string, id: string, input: { state?: unknown }) {
     if (!input || typeof input.state !== "string")
       return toolError("INVALID_INPUT");
+    return this.changeNote(this.db, roomId, id, (state) => noteState(state, input.state));
+  }
+  appendNote(tx: Prisma.TransactionClient, roomId: string, id: string, body: string) {
+    return this.changeNote(tx, roomId, id, (state) => noteState(state, undefined, body));
+  }
+  private async changeNote(
+    db: Prisma.TransactionClient,
+    roomId: string,
+    id: string,
+    merge: (state: Uint8Array) => ReturnType<typeof noteState>,
+  ) {
     for (let attempt = 0; attempt < 12; attempt++) {
-      const existing = await this.db.studyNote.findFirst({
+      const existing = await db.studyNote.findFirst({
         where: { roomId, id },
       });
       if (!existing) return toolError("NOT_FOUND", 404);
-      const merged = noteState(existing.state, input.state);
+      const merged = merge(existing.state);
       if (Buffer.from(existing.state).equals(merged.state))
-        return this.note(roomId, id);
-      const result = await this.db.studyNote.updateMany({
+        return { ...existing, state: Buffer.from(existing.state).toString("base64") };
+      const result = await db.studyNote.updateMany({
         where: { roomId, id, version: existing.version },
         data: { ...merged, version: { increment: 1 } },
       });
-      if (result.count) return this.note(roomId, id);
+      if (result.count) {
+        const note = await db.studyNote.findFirst({ where: { roomId, id } });
+        if (!note) return toolError("NOT_FOUND", 404);
+        return { ...note, state: Buffer.from(note.state).toString("base64") };
+      }
     }
     return toolError("TOOL_CONFLICT", 409);
   }

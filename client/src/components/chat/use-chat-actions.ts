@@ -40,11 +40,10 @@ export function useChatActions(roomId: string) {
     target?: string;
   } | null>(null);
   const pendingAsk = useRef<{
-    text: string;
-    locale: string;
-    target?: string;
+    key: string;
     id: string;
   } | null>(null);
+  const askInFlight = useRef(false);
   const busy = ai?.status === "running" || ai?.status === "pending";
   const presenter = session?.role === "presenter";
   const canAskNeuron = !!session;
@@ -76,30 +75,39 @@ export function useChatActions(roomId: string) {
       return errorCode(e);
     }
   }
+  async function askNeuron(
+    text: string,
+    context: { targetMessageId?: string; tool?: "notes" | "tasks" | "pomodoro"; noteId?: string } = {},
+  ) {
+    if (!canAskNeuron || !connected || busy || askInFlight.current) return;
+    const key = JSON.stringify([text, locale, context]);
+    const previous = pendingAsk.current;
+    const request = previous?.key === key ? previous : { key, id: crypto.randomUUID() };
+    pendingAsk.current = request;
+    askInFlight.current = true;
+    try {
+      const job = await ask({
+        ...context,
+        roomId,
+        clientRequestId: request.id,
+        prompt: text,
+        locale,
+      }).unwrap();
+      pendingAsk.current = null;
+      dispatch(actions.ai(job));
+      return job;
+    } finally {
+      askInFlight.current = false;
+    }
+  }
   async function send(e?: SubmitEvent<HTMLFormElement>) {
     e?.preventDefault();
     const text = (aiMode ? aiDraft : draft).trim();
     if (!text || sending || asking || !connected || (aiMode && busy)) return;
     setError("");
     if (aiMode) {
-      const previous = pendingAsk.current;
-      const request =
-        previous?.text === text &&
-        previous.locale === locale &&
-        previous.target === target?.id
-          ? previous
-          : { text, locale, target: target?.id, id: crypto.randomUUID() };
-      pendingAsk.current = request;
       try {
-        const job = await ask({
-          roomId,
-          clientRequestId: request.id,
-          prompt: text,
-          locale,
-          targetMessageId: target?.id,
-        }).unwrap();
-        pendingAsk.current = null;
-        dispatch(actions.ai(job));
+        if (!(await askNeuron(text, { targetMessageId: target?.id }))) return;
         dispatch(actions.clearSentDraft({ ai: true, text }));
         dispatch(actions.mode({ enabled: false }));
       } catch (e) {
@@ -164,6 +172,7 @@ export function useChatActions(roomId: string) {
     busy,
     presenter,
     canAskNeuron,
+    askNeuron,
     mode,
     retryAi,
     send,
