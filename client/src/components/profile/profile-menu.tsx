@@ -1,5 +1,8 @@
 "use client";
+import { useProposalsQuery } from "@/lib/api";
+import { useAppSelector } from "@/lib/hooks";
 import {
+  Bell,
   BookOpen,
   ChevronRight,
   FileText,
@@ -10,11 +13,35 @@ import { useTranslations } from "next-intl";
 import Link from "next/link";
 export function ProfileMenu() {
   const p = useTranslations("Product");
+  const session = useAppSelector((s) => s.chat.session);
+  const { data: proposals = [] } = useProposalsQuery(undefined, {
+    skip: !session,
+    pollingInterval: 15000,
+  });
+  const pendingCount = proposals.filter(
+    (proposal) => proposal.incoming && proposal.status === "pending",
+  ).length;
+
   return (
     <nav
       className="profile-menu bg-card [border:1px_solid_var(--border)] rounded-[16px] overflow-hidden mb-6 [&_a]:p-[18px_22px] [&_a]:flex [&_a]:items-center [&_a]:gap-3 [&_a]:text-[13px] [&_a]:[border-bottom:1px_solid_var(--border)] [&_a:last-child]:[border-bottom:0] [&_a:hover]:bg-muted [&_svg]:text-muted-foreground [&_a_>_span]:flex-1"
       aria-label={p("accountSections")}
     >
+      <Link
+        href="/notifications"
+        className="focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+      >
+        <Bell size={19} aria-hidden="true" />
+        <span>
+          {p("notifications")}
+          {pendingCount > 0 && (
+            <span className="ms-2 inline-block rounded-full bg-primary px-1.5 py-0.5 text-[10px] text-primary-foreground">
+              {pendingCount}
+            </span>
+          )}
+        </span>
+        <ChevronRight size={17} aria-hidden="true" />
+      </Link>
       {[
         { href: "/my-listings", label: "myListings", icon: FileText },
         { href: "/favorites", label: "favorites", icon: Heart },

@@ -1,6 +1,5 @@
 "use client";
 import {
-  Bell,
   Compass,
   MessageCircle,
   Newspaper,
@@ -15,7 +14,6 @@ const navigation = [
   { href: "/news", key: "news", icon: Newspaper },
   { href: "/create", key: "create", icon: PlusCircle },
   { href: "/messages", key: "messages", icon: MessageCircle },
-  { href: "/notifications", key: "notifications", icon: Bell },
   { href: "/profile", key: "profile", icon: Users },
 ];
 export function MobileNav() {
@@ -27,7 +25,7 @@ export function MobileNav() {
     href === "/" ? path === "/" : path.startsWith(href);
   function label(key: string) {
     if (key === "news") return social("news");
-    return key === "create" || key === "notifications" ? p(key) : t(key);
+    return key === "create" ? p(key) : t(key);
   }
   return (
     <nav

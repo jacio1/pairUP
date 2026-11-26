@@ -1,9 +1,6 @@
 "use client";
 import { Button } from "@/components/ui/button";
-import { useAppSelector } from "@/lib/hooks";
-import { useProposalsQuery } from "@/lib/api";
 import {
-  Bell,
   BookOpen,
   Infinity as InfinityIcon,
   MessageCircle,
@@ -18,15 +15,7 @@ export function Header() {
   const t = useTranslations("Demo");
   const p = useTranslations("Product");
   const social = useTranslations("Social");
-  const session = useAppSelector((s) => s.chat.session);
   const path = usePathname();
-  const { data: proposals = [] } = useProposalsQuery(undefined, {
-    skip: !session,
-    pollingInterval: 15000,
-  });
-  const count = proposals.filter(
-    (p) => p.incoming && p.status === "pending",
-  ).length;
   const active = (href: string) =>
     href === "/" ? path === "/" : path.startsWith(href);
   return (
@@ -77,21 +66,6 @@ export function Header() {
             render={<Link href="/messages" />}
           >
             <MessageCircle />
-          </Button>
-          <Button
-            className="relative"
-            variant="ghost"
-            size="icon"
-            aria-label={p("notifications")}
-            nativeButton={false}
-            render={<Link href="/notifications" />}
-          >
-            <Bell />
-            {count > 0 && (
-              <span className="absolute right-0 top-0 rounded-full bg-primary px-1 text-[10px] text-primary-foreground">
-                {count}
-              </span>
-            )}
           </Button>
           <Button nativeButton={false} render={<Link href="/create" />}>
             <PlusCircle className="size-4" />
